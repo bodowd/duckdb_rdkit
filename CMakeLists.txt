@@ -17,16 +17,19 @@ include_directories(src/include)
 
 set(EXTENSION_SOURCES 
     src/cast.cpp
-    src/duckdb_rdkit_extension.cpp
+    src/mol_compare.cpp
     src/mol_formats.cpp
     src/types.cpp
+    src/duckdb_rdkit_extension.cpp
 )
 
 build_static_extension(${TARGET_NAME} ${EXTENSION_SOURCES})
 build_loadable_extension(${TARGET_NAME} " " ${EXTENSION_SOURCES})
 
 set(DUCKDB_RDKIT_LIBRARIES
-   RDKit::SmilesParse  RDKit::GraphMol
+   RDKit::SmilesParse  
+   RDKit::GraphMol 
+   RDKit::Descriptors
     )
 # Link OpenSSL in both the static library as the loadable extension
 target_link_libraries(${EXTENSION_NAME} ${DUCKDB_RDKIT_LIBRARIES})

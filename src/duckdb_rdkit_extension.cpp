@@ -3,6 +3,7 @@
 #include "duckdb_rdkit_extension.hpp"
 #include "cast.hpp"
 #include "duckdb/main/extension_util.hpp"
+#include "mol_compare.hpp"
 #include "mol_formats.hpp"
 #include "types.hpp"
 #include <GraphMol/FileParsers/FileParsers.h>
@@ -19,7 +20,8 @@ namespace duckdb {
 static void LoadInternal(DatabaseInstance &instance) {
   duckdb_rdkit::RegisterTypes(instance);
   duckdb_rdkit::RegisterCasts(instance);
-  duckdb_rdkit::RegisterFunctions(instance);
+  duckdb_rdkit::RegisterFormatFunctions(instance);
+  duckdb_rdkit::RegisterCompareFunctions(instance);
 }
 
 void DuckdbRdkitExtension::Load(DuckDB &db) { LoadInternal(*db.instance); }

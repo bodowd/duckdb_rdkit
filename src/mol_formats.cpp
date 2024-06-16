@@ -100,7 +100,7 @@ void mol_from_smiles(DataChunk &args, ExpressionState &state, Vector &result) {
       });
 }
 
-void RegisterFunctions(DatabaseInstance &instance) {
+void RegisterFormatFunctions(DatabaseInstance &instance) {
   // Register scalar functions
   ScalarFunctionSet mol_from_smiles_set("mol_from_smiles");
   mol_from_smiles_set.AddFunction(ScalarFunction(
