@@ -30,7 +30,17 @@ This extension, duckdb_rdkit, allows you to use RDKit functionality within DuckD
 
 The instructions are derived from this post on the RDKit [blog].
 
-Summary: Install conda and mamba. Create a conda environment.
+The easiest way is to install via conda/mamba.
+
+Summary: Install conda and mamba. Create and activate a conda environment. Install RDkit in there.
+Run `make` to build duckdb and the extension.
+
+#### Issue with building on MacOS 14.3
+
+There was an issue building on MacOS 14.3 where a header from boost could not be found.
+You can try creating a conda env using the `starter_conda_env.yml` (from DavidACosgrove in the RDKit discussions).
+This includes boost libraries that are needed by RDKit. Then install RDKit into that env. And then run `make` in
+that env.
 
 [blog]: https://greglandrum.github.io/rdkit-blog/posts/2021-07-24-setting-up-a-cxx-dev-env.html
 
