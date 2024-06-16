@@ -1,0 +1,23 @@
+# name: test/sql/duckdb_rdkit.test
+# description: test duckdb_rdkit extension
+# group: [duckdb_rdkit]
+
+# Before we load the extension, this will fail
+statement error
+SELECT duckdb_rdkit('Sam');
+----
+Catalog Error: Scalar Function with name duckdb_rdkit does not exist!
+
+# Require statement will ensure this test is run with this extension loaded
+require duckdb_rdkit
+
+# Confirm the extension works
+query I
+SELECT duckdb_rdkit('Sam');
+----
+DuckdbRdkit Sam 🐥
+
+query I
+SELECT duckdb_rdkit_openssl_version('Michael');
+----
+<REGEX>:DuckdbRdkit Michael, my linked OpenSSL version is OpenSSL.*
