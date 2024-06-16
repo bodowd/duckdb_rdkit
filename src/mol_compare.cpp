@@ -9,6 +9,7 @@
 #include <GraphMol/MolPickler.h>
 #include <GraphMol/SmilesParse/SmilesWrite.h>
 #include <GraphMol/Substruct/SubstructMatch.h>
+#include <memory>
 
 namespace duckdb_rdkit {
 
@@ -77,12 +78,12 @@ static void is_exact_match(DataChunk &args, ExpressionState &state,
         // for example, comparing MW. Is this stored in the binary,
         // and is it possible to jump to the offset where that info is stored
         // and run the comparison of there?
-        RDKit::ROMol left_mol;
-        RDKit::ROMol right_mol;
+        std::unique_ptr<RDKit::ROMol> left_mol(new RDKit::ROMol());
+        std::unique_ptr<RDKit::ROMol> right_mol(new RDKit::ROMol());
 
-        RDKit::MolPickler::molFromPickle(left_blob.GetString(), left_mol);
-        RDKit::MolPickler::molFromPickle(right_blob.GetString(), right_mol);
-        auto compare_result = mol_cmp(left_mol, right_mol);
+        RDKit::MolPickler::molFromPickle(left_blob.GetString(), *left_mol);
+        RDKit::MolPickler::molFromPickle(right_blob.GetString(), *right_mol);
+        auto compare_result = mol_cmp(*left_mol, *right_mol);
         return compare_result;
       });
 }
