@@ -8,7 +8,7 @@ namespace duckdb_rdkit {
 // casts
 std::unique_ptr<RDKit::ROMol> rdkit_mol_from_smiles(std::string s);
 std::string rdkit_mol_to_binary_mol(const RDKit::ROMol mol);
-RDKit::ROMol rdkit_binary_mol_to_mol(std::string bmol);
+std::unique_ptr<RDKit::ROMol> rdkit_binary_mol_to_mol(std::string bmol);
 std::string rdkit_mol_to_smiles(RDKit::ROMol mol);
 
 void RegisterFormatFunctions(DatabaseInstance &instance);

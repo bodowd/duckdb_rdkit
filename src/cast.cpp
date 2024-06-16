@@ -37,7 +37,7 @@ void MolToVarchar(Vector &source, Vector &result, idx_t count) {
   UnaryExecutor::Execute<string_t, string_t>(
       source, result, count, [&](string_t bmol) {
         auto mol = rdkit_binary_mol_to_mol(bmol.GetString());
-        auto smiles = rdkit_mol_to_smiles(mol);
+        auto smiles = rdkit_mol_to_smiles(*mol);
         return StringVector::AddString(result, smiles);
       });
 }

@@ -42,9 +42,10 @@ std::string rdkit_mol_to_binary_mol(const RDKit::ROMol mol) {
 }
 
 // Deserialize a binary mol to RDKit mol
-RDKit::ROMol rdkit_binary_mol_to_mol(std::string bmol) {
-  RDKit::ROMol mol;
-  RDKit::MolPickler::molFromPickle(bmol, mol);
+std::unique_ptr<RDKit::ROMol> rdkit_binary_mol_to_mol(std::string bmol) {
+  std::unique_ptr<RDKit::ROMol> mol(new RDKit::ROMol());
+  RDKit::MolPickler::molFromPickle(bmol, *mol);
+
   return mol;
 }
 
@@ -70,7 +71,7 @@ void mol_to_smiles(DataChunk &args, ExpressionState &state, Vector &result) {
   UnaryExecutor::Execute<string_t, string_t>(
       smiles, result, count, [&](string_t bmol) {
         auto mol = rdkit_binary_mol_to_mol(bmol.GetString());
-        auto smiles = rdkit_mol_to_smiles(mol);
+        auto smiles = rdkit_mol_to_smiles(*mol);
         return StringVector::AddString(result, smiles);
       });
 }
