@@ -11,11 +11,18 @@ Catalog Error: Scalar Function with name mol_from_smiles does not exist!
 # Require statement will ensure this test is run with this extension loaded
 require duckdb_rdkit
 
-# mol_from_smiles with a valid SMILES should return the correct RDKit pickled molecule
+# for the tests:
+# a non canonical benzene is used 
+# because there is a Mol to VARCHAR cast, we will see a SMILES string coming back
+# in order to confirm that the data is being transformed by RDKit internally,
+# we use a non RDKIT canonical benzene, and expect a RDKit canonicalized benzene
+# to be returned
+
+# mol_from_smiles will return a SMILES string becuase cast from MolToVarChar will happen
 query I
-SELECT mol_from_smiles('CC');
+SELECT mol_from_smiles('C1=CC=CC=C1');
 ----
-\xEF\xBE\xAD\xDE\x00\x00\x00\x00\x0F\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x01\x00\x00\x00\x80\x01\x06\x00`\x00\x00\x00\x01\x03\x06\x00`\x00\x00\x00\x01\x03\x0B\x00\x01\x00\x14\x00\x00\x00\x00\x17\x04\x00\x00\x00\x00\x00\x00\x00\x16
+c1ccccc1
 
 # mol_from_smiles on invalid SMILES should return error
 statement error
@@ -26,12 +33,12 @@ Could not convert NOTASMILES to mol
 
 # mol_to_smiles can convert a proper RDKit pickled molecule back to the SMILES
 query I
-SELECT mol_to_smiles(mol_from_smiles('CC'));
-----
-CC
-
-# benzene is RDKit canonicalized
-query I
 SELECT mol_to_smiles(mol_from_smiles('C1=CC=CC=C1'))
+----
+c1ccccc1
+
+# ::mol cast is supported
+query I
+SELECT 'C1=CC=CC=C1'::mol;
 ----
 c1ccccc1
