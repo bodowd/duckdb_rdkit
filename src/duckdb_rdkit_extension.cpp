@@ -1,5 +1,6 @@
 #include "duckdb/common/string_util.hpp"
 #include "duckdb/common/types/string_type.hpp"
+#include "duckdb/common/types/validity_mask.hpp"
 #include "duckdb/common/types/vector.hpp"
 #include "duckdb/execution/expression_executor_state.hpp"
 #include "duckdb/function/function_set.hpp"
@@ -70,6 +71,7 @@ static std::string rdkit_mol_to_smiles(RDKit::ROMol mol) {
 
 // An extension function callable from duckdb
 // converts a SMILES all the way to the serialized version of the RDKit mol
+// returns NULL if conversion fails
 //
 // select mol_from_smiles('CC');
 //
@@ -78,11 +80,17 @@ void mol_from_smiles(DataChunk &args, ExpressionState &state, Vector &result) {
   auto &smiles = args.data[0];
   auto count = args.size();
 
-  UnaryExecutor::Execute<string_t, string_t>(
-      smiles, result, count, [&](string_t smiles) {
-        auto mol = rdkit_mol_from_smiles(smiles.GetString());
-        auto pickled_mol = rdkit_mol_to_binary_mol(*mol);
-        return StringVector::AddString(result, pickled_mol);
+  UnaryExecutor::ExecuteWithNulls<string_t, string_t>(
+      smiles, result, count,
+      [&](string_t smiles, ValidityMask &mask, idx_t idx) {
+        try {
+          auto mol = rdkit_mol_from_smiles(smiles.GetString());
+          auto pickled_mol = rdkit_mol_to_binary_mol(*mol);
+          return StringVector::AddString(result, pickled_mol);
+        } catch (...) {
+          mask.SetInvalid(idx);
+          return string_t();
+        }
       });
 }
 
