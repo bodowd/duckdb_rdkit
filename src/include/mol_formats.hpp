@@ -11,5 +11,5 @@ std::string rdkit_mol_to_binary_mol(const RDKit::ROMol mol);
 RDKit::ROMol rdkit_binary_mol_to_mol(std::string bmol);
 std::string rdkit_mol_to_smiles(RDKit::ROMol mol);
 
-void RegisterFunctions(DatabaseInstance &instance);
+void RegisterFormatFunctions(DatabaseInstance &instance);
 } // namespace duckdb_rdkit

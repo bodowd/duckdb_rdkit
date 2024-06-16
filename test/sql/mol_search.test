@@ -25,3 +25,20 @@ SELECT m FROM molecules WHERE m='CCO';
 CCO
 CCO
 
+# check that exact_match works while a simple '=' operator fails to 
+# find the same molecule
+statement ok
+INSERT INTO molecules VALUES ('Cc1ccccc1');
+
+# '=' operator fails to find the same molecule 
+query I
+SELECT m from molecules WHERE m='c1ccccc1C';
+----
+
+# exact_match function successfully finds the molecule
+# and returns it in the same SMILES format it was entered as
+query I
+SELECT m from molecules WHERE exact_match(m,'c1ccccc1C');
+----
+Cc1ccccc1
+
