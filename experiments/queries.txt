@@ -1,0 +1,8 @@
+connect to the db -- need to give the database name
+psql postgresql://postgres:example@localhost:5435/chembl
+
+compound_structures table -> molregno -> activities table
+
+select * from compound_structures c inner join activities a on a.molregno=c.molregno limit 10
+
+
