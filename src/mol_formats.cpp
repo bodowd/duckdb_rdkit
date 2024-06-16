@@ -10,11 +10,11 @@
 
 namespace duckdb_rdkit {
 // Expects a SMILES string and returns a RDKit pickled molecule
-RDKit::ROMol *rdkit_mol_from_smiles(std::string s) {
+std::unique_ptr<RDKit::ROMol> rdkit_mol_from_smiles(std::string s) {
   std::string smiles = s;
-  RDKit::ROMol *mol;
+  std::unique_ptr<RDKit::ROMol> mol;
   try {
-    mol = RDKit::SmilesToMol(smiles);
+    mol.reset(RDKit::SmilesToMol(smiles));
   } catch (std::exception &e) {
     std::string msg = StringUtil::Format("%s", typeid(e).name());
     // not sure if this is the right way to throw an error in duckdb
