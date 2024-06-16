@@ -8,7 +8,6 @@
 
 #include "duckdb/common/exception.hpp"
 #include "duckdb/common/operator/cast_operators.hpp"
-#include "duckdb/common/vector_operations/generic_executor.hpp"
 #include "duckdb/function/scalar_function.hpp"
 #include "duckdb/main/extension_util.hpp"
 #include "duckdb_rdkit_extension.hpp"
@@ -25,10 +24,10 @@
 namespace duckdb {
 
 // Serialize a molecule to binary using RDKit's MolPickler
-string_t rdkit_mol_to_binary_mol(const RDKit::ROMol &mol) {
+std::string rdkit_mol_to_binary_mol(const RDKit::ROMol mol) {
   std::string buf;
   try {
-    RDKit::MolPickler::pickleMol(mol, buf, RDKit::PicklerOps::AllProps);
+    RDKit::MolPickler::pickleMol(mol, buf);
   } catch (...) {
     std::string msg = "Could not serialize mol to binary";
     throw Exception(msg);
@@ -36,14 +35,15 @@ string_t rdkit_mol_to_binary_mol(const RDKit::ROMol &mol) {
   return buf;
 }
 
-RDKit::ROMol rdkit_binary_mol_to_mol(std::string &bmol) {
+// Deserialize a binary mol to RDKit mol
+RDKit::ROMol rdkit_binary_mol_to_mol(std::string bmol) {
   RDKit::ROMol mol;
-  RDKit::MolPickler::molFromPickle(bmol, mol, RDKit::PicklerOps::AllProps);
+  RDKit::MolPickler::molFromPickle(bmol, mol);
   return mol;
 }
 
 // Expects a SMILES string and returns a RDKit pickled molecule
-static std::string rdkit_mol_from_smiles(std::string s) {
+static RDKit::ROMol *rdkit_mol_from_smiles(std::string s) {
   std::string smiles = s;
   RDKit::ROMol *mol;
   try {
@@ -55,27 +55,21 @@ static std::string rdkit_mol_from_smiles(std::string s) {
   }
 
   if (mol) {
-    std::string buf;
-    RDKit::MolPickler::pickleMol(*mol, buf);
-    return buf;
+    return mol;
   } else {
     std::string msg = StringUtil::Format("Could not convert %s to mol", smiles);
     throw Exception(msg);
   }
 }
 
-// TODO: make an intermediate function that goes mol to binary and binary to mol
-// this way other formats can be supported
-
 // Expects an RDKit pickled molecule and returns the SMILES of the molecule
-static std::string rdkit_mol_to_smiles(std::string bmol) {
-  std::unique_ptr<RDKit::ROMol> mol(new RDKit::ROMol());
-  RDKit::MolPickler::molFromPickle(bmol, *mol);
-  std::string smiles = RDKit::MolToSmiles(*mol);
+static std::string rdkit_mol_to_smiles(RDKit::ROMol mol) {
+  std::string smiles = RDKit::MolToSmiles(mol);
   return smiles;
 }
 
 // An extension function callable from duckdb
+// converts a SMILES all the way to the serialized version of the RDKit mol
 // ```
 // select mol_from_smiles('CC');
 // ```
@@ -86,12 +80,14 @@ void mol_from_smiles(DataChunk &args, ExpressionState &state, Vector &result) {
 
   UnaryExecutor::Execute<string_t, string_t>(
       smiles, result, count, [&](string_t smiles) {
-        auto pickled_mol = rdkit_mol_from_smiles(smiles.GetString());
+        auto mol = rdkit_mol_from_smiles(smiles.GetString());
+        auto pickled_mol = rdkit_mol_to_binary_mol(*mol);
         return StringVector::AddString(result, pickled_mol);
       });
 }
 
 // An extension function callable from duckdb
+// converts a serialized RDKit molecule to SMILES
 //
 // If there is a table mols with a column of type Mol
 //
@@ -105,7 +101,8 @@ void mol_to_smiles(DataChunk &args, ExpressionState &state, Vector &result) {
 
   UnaryExecutor::Execute<string_t, string_t>(
       smiles, result, count, [&](string_t bmol) {
-        auto smiles = rdkit_mol_to_smiles(bmol.GetString());
+        auto mol = rdkit_binary_mol_to_mol(bmol.GetString());
+        auto smiles = rdkit_mol_to_smiles(mol);
         return StringVector::AddString(result, smiles);
       });
 }
