@@ -70,9 +70,9 @@ static std::string rdkit_mol_to_smiles(RDKit::ROMol mol) {
 
 // An extension function callable from duckdb
 // converts a SMILES all the way to the serialized version of the RDKit mol
-// ```
+//
 // select mol_from_smiles('CC');
-// ```
+//
 void mol_from_smiles(DataChunk &args, ExpressionState &state, Vector &result) {
   D_ASSERT(args.data.size() == 1);
   auto &smiles = args.data[0];
@@ -91,9 +91,9 @@ void mol_from_smiles(DataChunk &args, ExpressionState &state, Vector &result) {
 //
 // If there is a table mols with a column of type Mol
 //
-// ```
+//
 // select mol_to_smiles(*) from mols;
-// ```
+//
 void mol_to_smiles(DataChunk &args, ExpressionState &state, Vector &result) {
   D_ASSERT(args.data.size() == 1);
   auto &smiles = args.data[0];
@@ -105,6 +105,24 @@ void mol_to_smiles(DataChunk &args, ExpressionState &state, Vector &result) {
         auto smiles = rdkit_mol_to_smiles(mol);
         return StringVector::AddString(result, smiles);
       });
+}
+
+// This enables the user to insert into a Mol column by just writing the SMILES
+// Duckdb will try to convert the string to a rdkit mol
+// This is consistent with the RDKit Postgres cartridge behavior
+void VarcharToMol(Vector &source, Vector &result, idx_t count) {
+  UnaryExecutor::Execute<string_t, string_t>(
+      source, result, count, [&](string_t smiles) {
+        auto mol = rdkit_mol_from_smiles(smiles.GetString());
+        auto pickled_mol = rdkit_mol_to_binary_mol(*mol);
+        return StringVector::AddString(result, pickled_mol);
+      });
+}
+
+bool VarcharToMolCast(Vector &source, Vector &result, idx_t count,
+                      CastParameters &parameters) {
+  VarcharToMol(source, result, count);
+  return true;
 }
 
 static void LoadInternal(DatabaseInstance &instance) {
@@ -122,6 +140,10 @@ static void LoadInternal(DatabaseInstance &instance) {
   mol_to_smiles_set.AddFunction(ScalarFunction(
       {duckdb_rdkit::Mol()}, LogicalType::VARCHAR, mol_to_smiles));
   ExtensionUtil::RegisterFunction(instance, mol_to_smiles_set);
+
+  ExtensionUtil::RegisterCastFunction(instance, LogicalType::VARCHAR,
+                                      duckdb_rdkit::Mol(),
+                                      BoundCastInfo(VarcharToMolCast), 1);
 }
 
 void DuckdbRdkitExtension::Load(DuckDB &db) { LoadInternal(*db.instance); }
