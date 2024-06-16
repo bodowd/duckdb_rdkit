@@ -10,3 +10,4 @@ test/python/__pycache__/
 *.duckdb
 compile_commands.json
 experiments/
+CMakeCache.txt
