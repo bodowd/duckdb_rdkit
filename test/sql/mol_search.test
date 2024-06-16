@@ -1,0 +1,27 @@
+# Require statement will ensure this test is run with this extension loaded
+require duckdb_rdkit
+
+
+# setup
+statement ok
+CREATE TABLE molecules (m Mol);
+INSERT INTO molecules VALUES ('c1ccccc1'), ('CCO'), ('c1ccncc1'), ('c1ccc(-c2ccccn2)nc1'), ('CCO')
+
+# find exact match even if smiles is not canonical
+query I
+SELECT m FROM molecules WHERE m='C1=CC=CC=C1';
+----
+c1ccccc1
+
+# returns no rows if no match
+query I
+SELECT m FROM molecules WHERE m='CCCCCCCCC';
+----
+
+# returns multiple matches
+query I
+SELECT m FROM molecules WHERE m='CCO';
+----
+CCO
+CCO
+
