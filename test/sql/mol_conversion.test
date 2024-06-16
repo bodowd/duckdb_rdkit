@@ -1,0 +1,31 @@
+# name: test/sql/duckdb_rdkit.test
+# description: test duckdb_rdkit extension
+# group: [duckdb_rdkit]
+
+# Before we load the extension, this will fail
+statement error
+SELECT mol_from_smiles('CC');
+----
+Catalog Error: Scalar Function with name mol_from_smiles does not exist!
+
+# Require statement will ensure this test is run with this extension loaded
+require duckdb_rdkit
+
+# mol_from_smiles with a valid SMILES should return the correct RDKit pickled molecule
+query I
+SELECT mol_from_smiles('CC');
+----
+\xEF\xBE\xAD\xDE\x00\x00\x00\x00\x0F\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x01\x00\x00\x00\x80\x01\x06\x00`\x00\x00\x00\x01\x03\x06\x00`\x00\x00\x00\x01\x03\x0B\x00\x01\x00\x14\x00\x00\x00\x00\x17\x04\x00\x00\x00\x00\x00\x00\x00\x16
+
+# mol_from_smiles on invalid SMILES should return error
+statement error
+SELECT mol_from_smiles('NOTASMILES');
+----
+Could not convert NOTASMILES to mol
+
+
+# mol_to_smiles can convert a proper RDKit pickled molecule back to the SMILES
+query I
+SELECT mol_to_smiles(mol_from_smiles('CC'));
+----
+CC
