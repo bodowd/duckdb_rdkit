@@ -10,3 +10,4 @@ test/python/__pycache__/
 CMakeCache.txt
 compile_commands.json
 CMakeFiles
+chembl_postgres
