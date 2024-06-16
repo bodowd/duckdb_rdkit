@@ -6,3 +6,52 @@ compound_structures table -> molregno -> activities table
 select * from compound_structures c inner join activities a on a.molregno=c.molregno limit 10
 
 select * from compound_structures c inner join activities a on a.molregno=c.molregno inner join ligand_eff l on l.activity_id=a.activity_id inner join drug_mechanism d on d.molregno=c.molregno limit 10;
+
+N=C(CC(O)c1cc2ccccc2c2ccccc12)NCc1ccccc1
+
+
+# tried a query with rdkit enabled
+ select * from compound_structures c where canonical_smiles@='N=C(CC(O)c1cc2ccccc2c2ccccc12)NCc1ccccc1';
+
+ there is no index on canonical canonical_smiles
+ also canonical_smiles is a varchar. so it needs to be converted into molecules
+ 
+ \d compound_structures;
+                      Table "public.compound_structures"
+       Column       |          Type           | Collation | Nullable | Default 
+--------------------+-------------------------+-----------+----------+---------
+ molregno           | bigint                  |           | not null | 
+ molfile            | text                    |           |          | 
+ standard_inchi     | character varying(4000) |           |          | 
+ standard_inchi_key | character varying(27)   |           | not null | 
+ canonical_smiles   | character varying(4000) |           |          | 
+Indexes:
+    "pk_cmpdstr_molregno" PRIMARY KEY, btree (molregno)
+    "compound_structures_pk" UNIQUE, btree (molregno)
+    "idx_cmpdstr_smiles" btree (canonical_smiles)
+    "idx_cmpdstr_stdkey" btree (standard_inchi_key)
+    "uk_cmpdstr_stdinchkey" UNIQUE CONSTRAINT, btree (standard_inchi_key)
+Foreign-key constraints:
+    "fk_cmpdstr_molregno" FOREIGN KEY (molregno) REFERENCES molecule_dictionary(molregno) ON DELETE CASCADE
+    level3 character varying(5) NOT NULL,
+
+Result:
+Found: Time: 177735.504 ms (02:57.736)
+
+# add a molecule type column
+alter table compound_structures add m mol;
+update compound_structures set m=mol_from_smiles(canonical_smiles);
+# took about 47 min for 2372674 rows
+
+create index molidx on compound_structures using gist(m);
+# took 15 min
+
+
+ O=C(O)c1cn(C2CC2)c2cc(N3CCNCC3)c(F)cc2c1=O
+ molregno = 241 has 18348 activity entries
+
+select * from compound_structures c inner join activities a on a.molregno=c.molregno where m@=' O=C(O)c1cn(C2CC2)c2cc(N3CCNCC3)c(F)cc2c1=O';
+Runs in about 1 sec
+
+ select avg(a.value) from compound_structures c inner join activities a on a.molregno=c.molregno where m@=' O=C(O)c1cn(C2CC2)c2cc(N3CCNCC3)c(F)cc2c1=O';
+ runs in about 71 ms
