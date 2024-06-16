@@ -1,6 +1,7 @@
 #include "duckdb/common/string_util.hpp"
 #include "duckdb/common/types/string_type.hpp"
 #include "duckdb/function/function_set.hpp"
+#include <exception>
 #define DUCKDB_EXTENSION_MAIN
 
 #include "duckdb/common/exception.hpp"
@@ -27,10 +28,10 @@ std::string rdkit_mol_to_binary_mol(const RDKit::ROMol &mol) {
   try {
     RDKit::MolPickler::pickleMol(mol, buf, RDKit::PicklerOps::AllProps);
   } catch (...) {
-
     std::string msg = "Could not serialize mol to binary";
     // not sure if this is the right way to throw an error in duckdb
-    HandleCastError::AssignError(msg, &msg);
+    // HandleCastError::AssignError(msg, &msg);
+    throw Exception(msg);
   }
   return buf;
 }
@@ -42,33 +43,22 @@ static std::string rdkit_mol_from_smiles(std::string s) {
 
   try {
     mol.reset(RDKit::SmilesToMol(smiles));
-  } catch (...) {
-    return "no";
+  } catch (std::exception &e) {
+    // std::string msg = StringUtil::Format("Could not convert %s to mol",
+    // smiles);
+    std::string msg = StringUtil::Format("%s", typeid(e).name());
+    // not sure if this is the right way to throw an error in duckdb
+    throw Exception(msg);
   }
 
   if (mol) {
-    // convert the mol to binary and then make it a blob
+    // serialize the mol
     std::string bmol = rdkit_mol_to_binary_mol(*mol);
-    // Value m = Value::CreateValue(bmol);
     return bmol;
   } else {
     std::string msg = StringUtil::Format("Could not convert %s to mol", smiles);
-    // not sure if this is the right way to throw an error in duckdb
-    HandleCastError::AssignError(msg, &msg);
+    throw Exception(msg);
   }
-
-  // if (mol) {
-  //   Blob blob = mol_to_blob(*mol, &rc);
-  //   if (rc != SQLITE_OK) {
-  //     sqlite3_result_error_code(ctx, rc);
-  //   } else {
-  //     sqlite3_result_blob(ctx, blob.data(), blob.size(), SQLITE_TRANSIENT);
-  //   }
-  // } else {
-  //   chemicalite_log(SQLITE_WARNING, "Could not convert '%s' into mol.",
-  //                   smiles.c_str());
-  //   sqlite3_result_null(ctx);
-  // }
 }
 
 inline void DuckdbRdkitScalarFun(DataChunk &args, ExpressionState &state,
@@ -93,14 +83,12 @@ void mol_from_smiles(DataChunk &args, ExpressionState &state, Vector &result) {
       smiles, result, count, [&](string_t smiles) {
         auto binary_mol = rdkit_mol_from_smiles(smiles.GetString());
         return binary_mol;
-        // auto geometry = lstate.factory.Deserialize(smiles);
-        // auto size = WKBWriter::GetRequiredSize(geometry);
-        // auto str = StringVector::EmptyString(result, size);
-        // auto ptr = (data_ptr_t)(str.GetDataUnsafe());
-        // WKBWriter::Write(geometry, ptr);
-        // return str;
       });
 }
+
+// void mol_to_smiles() {
+//   std::unique_ptr<RDKit::ROMol> mol(arg_to_romol(arg, &rc));
+// }
 
 static void LoadInternal(DatabaseInstance &instance) {
   // Register a scalar function
