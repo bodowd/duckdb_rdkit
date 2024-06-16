@@ -58,7 +58,7 @@ The main binaries that will be built are:
 
 To run the extension code, simply start the shell with `./build/release/duckdb`.
 
-Now we can use the features from the extension directly in DuckDB. The template contains a single scalar function `duckdb_rdkit()` that takes a string arguments and returns a string:
+Now we can use the features from the extension directly in DuckDB.
 
 ```
 D select mol_from_smiles('CC') as result;
