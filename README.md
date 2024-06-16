@@ -21,7 +21,7 @@ This extension, duckdb_rdkit, allows you to use RDKit functionality within DuckD
 
 ### Molecule conversion functions
 
-- mol_from_smiles(SMILES): returns a molecule for a SMILES string, error if conversion fails
+- mol_from_smiles(SMILES): returns a molecule for a SMILES string. Returns NULL if mol cannot be made from SMILES
 - mol_to_smiles(mol): returns the SMILES string for a rdkit molecule
 
 ## Building

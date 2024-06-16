@@ -24,11 +24,11 @@ SELECT mol_from_smiles('C1=CC=CC=C1');
 ----
 c1ccccc1
 
-# mol_from_smiles on invalid SMILES should return error
-statement error
+# mol_from_smiles on invalid SMILES should return NULL
+query I
 SELECT mol_from_smiles('NOTASMILES');
 ----
-Could not convert NOTASMILES to mol
+NULL
 
 
 # mol_to_smiles can convert a proper RDKit pickled molecule back to the SMILES
