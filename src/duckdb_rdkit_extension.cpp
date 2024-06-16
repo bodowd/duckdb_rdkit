@@ -125,6 +125,21 @@ bool VarcharToMolCast(Vector &source, Vector &result, idx_t count,
   return true;
 }
 
+void MolToVarchar(Vector &source, Vector &result, idx_t count) {
+  UnaryExecutor::Execute<string_t, string_t>(
+      source, result, count, [&](string_t bmol) {
+        auto mol = rdkit_binary_mol_to_mol(bmol.GetString());
+        auto smiles = rdkit_mol_to_smiles(mol);
+        return StringVector::AddString(result, smiles);
+      });
+}
+
+bool MolToVarcharCast(Vector &source, Vector &result, idx_t count,
+                      CastParameters &parameters) {
+  MolToVarchar(source, result, count);
+  return true;
+}
+
 static void LoadInternal(DatabaseInstance &instance) {
   // Register Mol type
   ExtensionUtil::RegisterType(instance, "Mol", duckdb_rdkit::Mol());
@@ -144,6 +159,10 @@ static void LoadInternal(DatabaseInstance &instance) {
   ExtensionUtil::RegisterCastFunction(instance, LogicalType::VARCHAR,
                                       duckdb_rdkit::Mol(),
                                       BoundCastInfo(VarcharToMolCast), 1);
+
+  ExtensionUtil::RegisterCastFunction(instance, duckdb_rdkit::Mol(),
+                                      LogicalType::VARCHAR,
+                                      BoundCastInfo(MolToVarcharCast), 1);
 }
 
 void DuckdbRdkitExtension::Load(DuckDB &db) { LoadInternal(*db.instance); }
