@@ -62,8 +62,8 @@ bool mol_cmp(const RDKit::ROMol &m1, const RDKit::ROMol &m2) {
 }
 
 // runs exact match on two duckdb Flat vectors
-static void exact_match(DataChunk &args, ExpressionState &state,
-                        Vector &result) {
+static void is_exact_match(DataChunk &args, ExpressionState &state,
+                           Vector &result) {
   D_ASSERT(args.ColumnCount() == 2);
   // args.data[i] is a FLAT_VECTOR
   auto &left = args.data[0];
@@ -88,10 +88,10 @@ static void exact_match(DataChunk &args, ExpressionState &state,
 }
 
 void RegisterCompareFunctions(DatabaseInstance &instance) {
-  ScalarFunctionSet set("exact_match");
+  ScalarFunctionSet set("is_exact_match");
   // left type and right type
   set.AddFunction(ScalarFunction({duckdb_rdkit::Mol(), duckdb_rdkit::Mol()},
-                                 LogicalType::BOOLEAN, exact_match));
+                                 LogicalType::BOOLEAN, is_exact_match));
   ExtensionUtil::RegisterFunction(instance, set);
 }
 

@@ -17,7 +17,7 @@ This extension, duckdb_rdkit, allows you to use RDKit functionality within DuckD
 
 ### Searches
 
-- exact_match(mol1, mol2) : exact structure search
+- is_exact_match(mol1, mol2) : exact structure search. Returns boolean
 
 ### Molecule conversion functions
 
