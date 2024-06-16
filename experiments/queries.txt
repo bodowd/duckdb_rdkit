@@ -55,3 +55,12 @@ Runs in about 1 sec
 
  select avg(a.value) from compound_structures c inner join activities a on a.molregno=c.molregno where m@=' O=C(O)c1cn(C2CC2)c2cc(N3CCNCC3)c(F)cc2c1=O';
  runs in about 71 ms
+
+select c.m, a.* from compound_structures c inner join activities a on a.molregno=c.molregno where a.value < 1;
+there are 142276 rows
+runs in 4 sec 
+
+# adding a substructure query
+select c.m, a.* from compound_structures c inner join activities a on a.molregno=c.molregno where a.value < 1 and a.type='MIC' and c.m@>'c1ccccc1';
+runs in ~2 minutes
+
