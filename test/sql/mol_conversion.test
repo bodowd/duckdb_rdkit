@@ -29,3 +29,9 @@ query I
 SELECT mol_to_smiles(mol_from_smiles('CC'));
 ----
 CC
+
+# benzene is RDKit canonicalized
+query I
+SELECT mol_to_smiles(mol_from_smiles('C1=CC=CC=C1'))
+----
+c1ccccc1
