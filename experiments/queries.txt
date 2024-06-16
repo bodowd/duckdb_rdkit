@@ -5,4 +5,4 @@ compound_structures table -> molregno -> activities table
 
 select * from compound_structures c inner join activities a on a.molregno=c.molregno limit 10
 
-
+select * from compound_structures c inner join activities a on a.molregno=c.molregno inner join ligand_eff l on l.activity_id=a.activity_id inner join drug_mechanism d on d.molregno=c.molregno limit 10;
