@@ -7,7 +7,7 @@ select * from compound_structures c inner join activities a on a.molregno=c.molr
 
 select * from compound_structures c inner join activities a on a.molregno=c.molregno inner join ligand_eff l on l.activity_id=a.activity_id inner join drug_mechanism d on d.molregno=c.molregno limit 10;
 
-N=C(CC(O)c1cc2ccccc2c2ccccc12)NCc1ccccc1
+N=C(CC(O)c2cc2ccccc2c2ccccc12)NCc1ccccc1
 
 
 # tried a query with rdkit enabled
@@ -47,8 +47,8 @@ create index molidx on compound_structures using gist(m);
 # took 15 min
 
 
- O=C(O)c1cn(C2CC2)c2cc(N3CCNCC3)c(F)cc2c1=O
- molregno = 241 has 18348 activity entries
+O=C(O)c1cn(C2CC2)c2cc(N3CCNCC3)c(F)cc2c1=O
+molregno = 241 has 18348 activity entries
 
 select * from compound_structures c inner join activities a on a.molregno=c.molregno where m@=' O=C(O)c1cn(C2CC2)c2cc(N3CCNCC3)c(F)cc2c1=O';
 Runs in about 1 sec
@@ -64,3 +64,45 @@ runs in 4 sec
 select c.m, a.* from compound_structures c inner join activities a on a.molregno=c.molregno where a.value < 1 and a.type='MIC' and c.m@>'c1ccccc1';
 runs in ~2 minutes
 
+
+
+#### duckdb
+install postgres_scanner;
+load postgres_scanner;
+set memory_limit='8GB';
+create table compound_structures as from postgres_scan('host=localhost port=5435 password=example user=postgres dbname=chembl', 'public', 'compound_structures');
+
+alter table compound_structures add column rdkmol mol;
+update compound_structures set rdkmol=mol_from_smiles(m);
+# this update failed
+# may be an memory leak error. Ran small tests on how to use ROMol and Pickle functions
+# from rdkit and noticed memory leaks there if not done correctly
+# fixed the memory leak (RDKit::ROMol needs unique_ptr and new ROMol) and now it seems to work
+
+
+# read 
+explain analyze select * from compound_structures where is_exact_match(rdkmol, ' O=C(O)c1cn(C2CC2)c2cc(N3CCNCC3)c(F)cc2c1=O');
+ran now taking 3343.32 sec with seq scan
+try with valgrind
+no leaks
+
+# add index
+create index molidx on compound_structures (rdkmol);
+30 sec
+
+
+
+# try joins and aggregation
+create table activities as from postgres_scan('host=localhost port=5435 password=example user=postgres dbname=chembl', 'public', 'activities');
+create table ligand_eff as from postgres_scan('host=localhost port=5435 password=example user=postgres dbname=chembl', 'public', 'ligand_eff');
+
+# ran this:
+explain analyze select avg(a.value) from compound_structures c inner join activities a on a.molregno=c.molregno where is_exact_match(c.rdkmol,' O=C(O)c1cn(C2CC2)c2cc(N3CCNCC3)c(F)cc2c1=O');
+# takes 18.56s
+# same query in Postgres takes about 400 ms
+
+# is it because of my is_exact_match function?
+explain analyze select avg(a.value) from compound_structures c inner join activities a on a.molregno=c.molregno where c.molregno=241;
+# takes 1ms on PG and 22 ms in duckdb
+# no index in duckdb
+# 18348 rows that are molregno=241 (checked by count(*) and also by the PG and duckdb query plan which says the number of rows)

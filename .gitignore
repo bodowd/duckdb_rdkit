@@ -14,3 +14,4 @@ CMakeCache.txt
 compile_commands.json
 CMakeFiles
 chembl_postgres
+*.duckdb
