@@ -8,5 +8,3 @@ test/python/__pycache__/
 .Rhistory
 compile_commands.json
 experiments
-.cache
-*.duckdb
