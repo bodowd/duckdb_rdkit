@@ -18,14 +18,14 @@ std::unique_ptr<RDKit::ROMol> rdkit_mol_from_smiles(std::string s) {
   } catch (std::exception &e) {
     std::string msg = StringUtil::Format("%s", typeid(e).name());
     // not sure if this is the right way to throw an error in duckdb
-    throw Exception(msg);
+    throw FatalException(msg);
   }
 
   if (mol) {
     return mol;
   } else {
     std::string msg = StringUtil::Format("Could not convert %s to mol", smiles);
-    throw Exception(msg);
+    throw FatalException(msg);
   }
 }
 
@@ -36,7 +36,7 @@ std::string rdkit_mol_to_binary_mol(const RDKit::ROMol mol) {
     RDKit::MolPickler::pickleMol(mol, buf);
   } catch (...) {
     std::string msg = "Could not serialize mol to binary";
-    throw Exception(msg);
+    throw FatalException(msg);
   }
   return buf;
 }
