@@ -13,9 +13,10 @@
 namespace duckdb_rdkit {
 
 LogicalType Mol();
+LogicalType UmbraMol();
 void RegisterTypes(DatabaseInstance &instance);
 
-class UmbraMol {
+struct umbra_mol_t {
 
 public:
   static constexpr idx_t NUM_ATOMS_BYTES = 4;
@@ -35,10 +36,10 @@ public:
   std::string bmol;
 
   // default constructor for deserialization
-  UmbraMol() = default;
+  umbra_mol_t() = default;
 
-  UmbraMol(uint32_t num_atoms, uint32_t num_bonds, uint32_t amw,
-           uint32_t num_rings, const std::string &binary_mol)
+  umbra_mol_t(uint32_t num_atoms, uint32_t num_bonds, uint32_t amw,
+              uint32_t num_rings, const std::string &binary_mol)
       : num_atoms(num_atoms), num_bonds(num_bonds), amw(amw),
         num_rings(num_rings), bmol_size(binary_mol.size()), bmol(binary_mol) {
     std::cout << "making mol_t" << std::endl;
@@ -63,9 +64,6 @@ public:
           UINT32_MAX_SIZE);
     }
   }
-
-  std::vector<char> serialize();
-  UmbraMol deserialize();
 };
 
 } // namespace duckdb_rdkit

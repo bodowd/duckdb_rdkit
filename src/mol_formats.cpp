@@ -1,3 +1,4 @@
+#include "mol_formats.hpp"
 #include "common.hpp"
 #include "duckdb/common/string_util.hpp"
 #include "types.hpp"
@@ -8,6 +9,7 @@
 #include <GraphMol/SmilesParse/SmartsWrite.h>
 #include <GraphMol/SmilesParse/SmilesParse.h>
 #include <GraphMol/SmilesParse/SmilesWrite.h>
+#include <memory>
 
 namespace duckdb_rdkit {
 // Expects a SMILES string and returns a RDKit pickled molecule
@@ -40,6 +42,54 @@ std::string rdkit_mol_to_binary_mol(const RDKit::ROMol mol) {
     throw FatalException(msg);
   }
   return buf;
+}
+
+std::string serialize_umbra_mol(umbra_mol_t umbra_mol) {
+  size_t total_size =
+      umbra_mol.HEADER_SIZE + umbra_mol.PTR_SIZE_BYTES + umbra_mol.bmol_size;
+  std::string buffer;
+  size_t offset = 0;
+
+  // Copy each member to the buffer
+  std::memcpy(buffer.data() + offset, &umbra_mol.num_atoms,
+              umbra_mol.NUM_ATOMS_BYTES);
+  offset += umbra_mol.NUM_ATOMS_BYTES;
+  std::memcpy(buffer.data() + offset, &umbra_mol.num_bonds,
+              umbra_mol.NUM_BONDS_BYTES);
+  offset += umbra_mol.NUM_BONDS_BYTES;
+  std::memcpy(buffer.data() + offset, &umbra_mol.amw, umbra_mol.AMW_BYTES);
+  offset += umbra_mol.AMW_BYTES;
+  std::memcpy(buffer.data() + offset, &umbra_mol.num_rings,
+              umbra_mol.NUM_RINGS_BYTES);
+  offset += umbra_mol.NUM_RINGS_BYTES;
+  std::memcpy(buffer.data() + offset, &umbra_mol.bmol_size,
+              umbra_mol.PTR_SIZE_BYTES);
+  offset += umbra_mol.PTR_SIZE_BYTES;
+  std::memcpy(buffer.data() + offset, &umbra_mol.bmol, umbra_mol.bmol_size);
+
+  return buffer;
+}
+
+umbra_mol_t deserialize_umbra_mol(std::string buffer) {
+  umbra_mol_t umbra_mol;
+  size_t offset = 0;
+
+  // Copy each member from the string buffer
+  std::memcpy(&umbra_mol.num_atoms, &buffer[offset], umbra_mol.NUM_ATOMS_BYTES);
+  offset += umbra_mol.NUM_ATOMS_BYTES;
+  std::memcpy(&umbra_mol.num_bonds, &buffer[offset], umbra_mol.NUM_BONDS_BYTES);
+  offset += umbra_mol.NUM_BONDS_BYTES;
+  std::memcpy(&umbra_mol.amw, &buffer[offset], umbra_mol.AMW_BYTES);
+  offset += umbra_mol.AMW_BYTES;
+  std::memcpy(&umbra_mol.num_rings, &buffer[offset], umbra_mol.NUM_RINGS_BYTES);
+  offset += umbra_mol.NUM_RINGS_BYTES;
+  std::memcpy(&umbra_mol.bmol_size, &buffer[offset], umbra_mol.PTR_SIZE_BYTES);
+  offset += umbra_mol.PTR_SIZE_BYTES;
+
+  umbra_mol.bmol.resize(umbra_mol.bmol_size);
+  std::memcpy(&umbra_mol.bmol[0], &buffer[offset], umbra_mol.bmol_size);
+
+  return umbra_mol;
 }
 
 // Deserialize a binary mol to RDKit mol
@@ -103,7 +153,7 @@ void mol_from_smiles(DataChunk &args, ExpressionState &state, Vector &result) {
           auto pickled_mol = rdkit_mol_to_binary_mol(*mol);
 
           auto umbra_mol =
-              UmbraMol(num_atoms, num_bonds, amw, num_rings, pickled_mol);
+              umbra_mol_t(num_atoms, num_bonds, amw, num_rings, pickled_mol);
 
           std::cout << "\numbra mol" << std::endl;
           std::cout << "num_atoms: " << umbra_mol.num_atoms << std::endl;
@@ -131,7 +181,12 @@ void mol_from_smiles(DataChunk &args, ExpressionState &state, Vector &result) {
             printf("%02x ", static_cast<unsigned char>(i));
           }
 
-          // auto serialized = umbra_mol.serialize();
+          std::cout << "pickled mol data: " << std::endl;
+          for (auto i = 0; i < umbra_mol.bmol_size; i++) {
+            printf("%02x ", static_cast<unsigned char>(pickled_mol.data()[i]));
+          }
+
+          auto serialized = serialize_umbra_mol(umbra_mol);
           // std::cout << "serialized" << std::endl;
           // for (auto i : serialized) {
           //   // printf("%02x", i);
@@ -145,7 +200,7 @@ void mol_from_smiles(DataChunk &args, ExpressionState &state, Vector &result) {
 
           // TODO: convert the whole serialized thing into a string so that it
           // can be passed to a StringVector
-          return StringVector::AddString(result, umbra_mol.bmol);
+          return StringVector::AddString(result, serialized);
         } catch (...) {
           mask.SetInvalid(idx);
           return string_t();
