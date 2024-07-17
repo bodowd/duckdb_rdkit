@@ -1,6 +1,7 @@
 #include "common.hpp"
 #include "duckdb/common/string_util.hpp"
 #include "types.hpp"
+#include <GraphMol/Descriptors/MolDescriptors.h>
 #include <GraphMol/FileParsers/FileParsers.h>
 #include <GraphMol/GraphMol.h>
 #include <GraphMol/MolPickler.h>
@@ -92,8 +93,59 @@ void mol_from_smiles(DataChunk &args, ExpressionState &state, Vector &result) {
       [&](string_t smiles, ValidityMask &mask, idx_t idx) {
         try {
           auto mol = rdkit_mol_from_smiles(smiles.GetString());
+
+          // add the meta data to the front of pickled mol and store the buffer
+          auto num_atoms = mol->getNumAtoms();
+          auto num_bonds = mol->getNumBonds();
+          auto amw = RDKit::Descriptors::calcAMW(*mol);
+          auto num_rings = mol->getRingInfo()->numRings();
+
           auto pickled_mol = rdkit_mol_to_binary_mol(*mol);
-          return StringVector::AddString(result, pickled_mol);
+
+          auto umbra_mol =
+              UmbraMol(num_atoms, num_bonds, amw, num_rings, pickled_mol);
+
+          std::cout << "\numbra mol" << std::endl;
+          std::cout << "num_atoms: " << umbra_mol.num_atoms << std::endl;
+          std::cout << "num_bonds: " << umbra_mol.num_bonds << std::endl;
+          std::cout << "amw: " << umbra_mol.amw << std::endl;
+          std::cout << "num_rings: " << umbra_mol.num_rings << std::endl;
+          std::cout << "bmol_size: " << umbra_mol.bmol_size << std::endl;
+          // std::cout << "binary_mol: " << umbra_mol.bmol_ptr.get() <<
+          // std::endl;
+          std::vector<char> pbmol;
+          for (size_t i = 0; i < umbra_mol.bmol_size; ++i) {
+            auto bmol = umbra_mol.bmol;
+            printf("%02x ", static_cast<unsigned char>(bmol[i]));
+            pbmol.push_back(bmol[i]);
+          }
+          printf("\n");
+
+          std::cout << "vector: " << std::endl;
+          for (auto i : pbmol) {
+            printf("%02x ", static_cast<unsigned char>(i));
+          }
+
+          std::cout << "pickled mol: " << std::endl;
+          for (auto i : pickled_mol) {
+            printf("%02x ", static_cast<unsigned char>(i));
+          }
+
+          // auto serialized = umbra_mol.serialize();
+          // std::cout << "serialized" << std::endl;
+          // for (auto i : serialized) {
+          //   // printf("%02x", i);
+          //   printf("%02x ", static_cast<unsigned char>(i));
+          // }
+
+          // NOTE: it seems that RDKit expects a std::string for the depickling
+          // When I change the type of the binary mol that i keep in umbra_mol
+          // it works. Perhaps RDKit uses some metadata from the std::string
+          // that is missing when just getting the .data() from the std::string?
+
+          // TODO: convert the whole serialized thing into a string so that it
+          // can be passed to a StringVector
+          return StringVector::AddString(result, umbra_mol.bmol);
         } catch (...) {
           mask.SetInvalid(idx);
           return string_t();
