@@ -47,29 +47,31 @@ std::string rdkit_mol_to_binary_mol(const RDKit::ROMol mol) {
 }
 
 std::string serialize_umbra_mol(umbra_mol_t umbra_mol) {
-  size_t total_size =
-      umbra_mol.HEADER_SIZE + umbra_mol.BMOL_SIZE_BYTES + umbra_mol.bmol_size;
-  std::string buffer;
+  std::vector<char> buffer;
   size_t offset = 0;
 
-  // Copy each member to the buffer
-  std::memcpy(buffer.data() + offset, &umbra_mol.num_atoms,
-              umbra_mol.NUM_ATOMS_BYTES);
-  offset += umbra_mol.NUM_ATOMS_BYTES;
-  std::memcpy(buffer.data() + offset, &umbra_mol.num_bonds,
-              umbra_mol.NUM_BONDS_BYTES);
-  offset += umbra_mol.NUM_BONDS_BYTES;
-  std::memcpy(buffer.data() + offset, &umbra_mol.amw, umbra_mol.AMW_BYTES);
-  offset += umbra_mol.AMW_BYTES;
-  std::memcpy(buffer.data() + offset, &umbra_mol.num_rings,
-              umbra_mol.NUM_RINGS_BYTES);
-  offset += umbra_mol.NUM_RINGS_BYTES;
-  std::memcpy(buffer.data() + offset, &umbra_mol.bmol_size,
-              umbra_mol.BMOL_SIZE_BYTES);
-  offset += umbra_mol.BMOL_SIZE_BYTES;
-  std::memcpy(buffer.data() + offset, &umbra_mol.bmol, umbra_mol.bmol_size);
+  buffer.insert(buffer.end(),
+                reinterpret_cast<const char *>(&umbra_mol.num_atoms),
+                reinterpret_cast<const char *>(&umbra_mol.num_atoms) +
+                    sizeof(umbra_mol.num_atoms));
+  buffer.insert(buffer.end(),
+                reinterpret_cast<const char *>(&umbra_mol.num_bonds),
+                reinterpret_cast<const char *>(&umbra_mol.num_bonds) +
+                    umbra_mol.NUM_BONDS_BYTES);
+  buffer.insert(buffer.end(), reinterpret_cast<const char *>(&umbra_mol.amw),
+                reinterpret_cast<const char *>(&umbra_mol.amw) +
+                    umbra_mol.AMW_BYTES);
+  buffer.insert(buffer.end(),
+                reinterpret_cast<const char *>(&umbra_mol.num_rings),
+                reinterpret_cast<const char *>(&umbra_mol.num_rings) +
+                    umbra_mol.NUM_RINGS_BYTES);
+  buffer.insert(buffer.end(),
+                reinterpret_cast<const char *>(&umbra_mol.bmol_size),
+                reinterpret_cast<const char *>(&umbra_mol.bmol_size) +
+                    umbra_mol.BMOL_SIZE_BYTES);
+  buffer.insert(buffer.end(), umbra_mol.bmol.begin(), umbra_mol.bmol.end());
 
-  return buffer;
+  return std::string(buffer.begin(), buffer.end());
 }
 
 umbra_mol_t deserialize_umbra_mol(std::string buffer) {
