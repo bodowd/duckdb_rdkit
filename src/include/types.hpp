@@ -1,13 +1,7 @@
 #pragma once
 #include "common.hpp"
-#include "duckdb/common/assert.hpp"
-#include "duckdb/common/constants.hpp"
 #include "duckdb/common/exception.hpp"
-#include "duckdb/common/serializer/binary_serializer.hpp"
-#include "duckdb/common/serializer/memory_stream.hpp"
-#include "duckdb/common/typedefs.hpp"
 #include <cstdint>
-#include <memory>
 #include <sys/types.h>
 
 namespace duckdb_rdkit {
@@ -48,9 +42,6 @@ public:
     // std::cout << "amw: " << amw << std::endl;
     // std::cout << "num_rings: " << num_rings << std::endl;
     // std::cout << "binary_mol: " << std::endl;
-    // for (char byte : binary_mol) {
-    //   printf("%02x ", static_cast<unsigned char>(byte));
-    // }
     // for (size_t i = 0; i < bmol_size; ++i) {
     //   auto a = bmol;
     //   printf("%02x ", static_cast<unsigned char>(a[i]));
@@ -63,6 +54,20 @@ public:
           "this molecule larger than the supported size: '%d'",
           UINT32_MAX_SIZE);
     }
+  }
+
+  friend std::ostream &operator<<(std::ostream &out,
+                                  const umbra_mol_t &umbra_mol) {
+    out << "num_atoms: " << umbra_mol.num_atoms << '\n';
+    out << "num_bonds: " << umbra_mol.num_bonds << '\n';
+    out << "amw: " << umbra_mol.amw << '\n';
+    out << "num_rings: " << umbra_mol.num_rings << '\n';
+    out << "bmol_size: " << umbra_mol.bmol_size << '\n';
+    out << "bmol: " << '\n';
+    for (char byte : umbra_mol.bmol) {
+      printf("%02x ", static_cast<unsigned char>(byte));
+    }
+    return out;
   }
 };
 

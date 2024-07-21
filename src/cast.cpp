@@ -53,38 +53,35 @@ bool MolToVarcharCast(Vector &source, Vector &result, idx_t count,
 
 void UmbraMolToVarchar(Vector &source, Vector &result, idx_t count) {
   UnaryExecutor::Execute<string_t, string_t>(
-      source, result, count, [&](string_t binary_umbra_mol) {
+      source, result, count, [&](string_t string_umbra_mol) {
         auto umbra_mol = umbra_mol_t();
         std::cout << "umbra mol to varchar" << std::endl;
-        auto buffer = binary_umbra_mol.GetString();
-        std::cout << buffer << std::endl;
+        auto buffer = string_umbra_mol.GetString();
+
         // auto umbra_mol = deserialize_umbra_mol(umbra_mol_string);
         std::cout << "\nUmbraMolToVarchar: " << std::endl;
         std::cout << "\nbuffer: " << std::endl;
         for (auto i = 0; i < buffer.size(); i++) {
           printf("%02x ", static_cast<unsigned char>(buffer[i]));
         }
-        std::cout << "\nsubstring: " << std::endl;
-        auto substring = buffer.substr(0, 4);
-        for (auto i = 0; i < 4; i++) {
-          printf("%02x ", static_cast<unsigned char>(substring[i]));
+
+        auto d_umbra_mol = deserialize_umbra_mol(buffer);
+        std::cout << "\numbra mol in cast (before populating): " << std::endl;
+        std::cout << umbra_mol << std::endl;
+        std::cout << "d_umbra_mol in cast: " << std::endl;
+        std::cout << d_umbra_mol << std::endl;
+
+        std::cout << "bmol in cast" << std::endl;
+        for (auto i : d_umbra_mol.bmol) {
+          printf("%02x ", static_cast<unsigned char>(i));
         }
 
-        std::memcpy(&umbra_mol.num_atoms, &buffer.data()[0],
-                    umbra_mol.NUM_ATOMS_BYTES);
-        std::cout << umbra_mol.num_atoms << std::endl;
-
-        // std::cout << "AMW: " << umbra_mol.amw << std::endl;
-        // for (auto i = 0; i < umbra_mol.bmol_size; i++) {
-        //   printf("%02x ", static_cast<unsigned
-        //   char>(umbra_mol.bmol.data()[i]));
-        // }
-
-        // auto deserialized_umbra_mol =
-        //     deserialize_umbra_mol(umbra_mol.GetString());
-        // auto mol = rdkit_binary_mol_to_mol(deserialized_umbra_mol.bmol);
-        // auto smiles = rdkit_mol_to_smiles(*mol);
-        return StringVector::AddString(result, umbra_mol.bmol);
+        auto rdkit_mol = rdkit_binary_mol_to_mol(d_umbra_mol.bmol);
+        std::cout << "rdkit_mol: " << std::endl;
+        //
+        auto smiles = rdkit_mol_to_smiles(*rdkit_mol);
+        std::cout << "smiles: " << smiles << std::endl;
+        return StringVector::AddString(result, smiles);
       });
 }
 

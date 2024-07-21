@@ -46,9 +46,10 @@ std::string rdkit_mol_to_binary_mol(const RDKit::ROMol mol) {
   return buf;
 }
 
+// return std::string because it seems a little easier to work with with duckdb
+// for example, StringVector. But perhaps there's a better way
 std::string serialize_umbra_mol(umbra_mol_t umbra_mol) {
   std::vector<char> buffer;
-  size_t offset = 0;
 
   buffer.insert(buffer.end(),
                 reinterpret_cast<const char *>(&umbra_mol.num_atoms),
@@ -90,7 +91,15 @@ umbra_mol_t deserialize_umbra_mol(std::string buffer) {
   std::memcpy(&umbra_mol.bmol_size, &buffer[offset], umbra_mol.BMOL_SIZE_BYTES);
   offset += umbra_mol.BMOL_SIZE_BYTES;
 
+  // std::vector<char> vec;
+  // auto substring = buffer.substr(offset, offset + umbra_mol.bmol_size);
+  // vec.insert(vec.end(), substring.begin(), substring.end());
+
   umbra_mol.bmol.resize(umbra_mol.bmol_size);
+  // std::cout << "deserialize substr: " << std::endl;
+  // for (auto i = offset; i < offset + umbra_mol.bmol_size; i++) {
+  //   printf("%02x ", static_cast<unsigned char>(buffer[i]));
+  // }
   std::memcpy(&umbra_mol.bmol[0], &buffer[offset], umbra_mol.bmol_size);
 
   return umbra_mol;
@@ -143,6 +152,11 @@ void umbra_mol_from_smiles(DataChunk &args, ExpressionState &state,
         try {
           auto mol = rdkit_mol_from_smiles(smiles.GetString());
           auto pickled_mol = rdkit_mol_to_binary_mol(*mol);
+          std::cout << "pickled mol: " << std::endl;
+          for (auto i = 0; i < pickled_mol.size(); i++) {
+            printf("%02x ", static_cast<unsigned char>(pickled_mol.data()[i]));
+          }
+
           std::cout << "pickled the mol in umbra_mol_from_smiles" << std::endl;
           // add the meta data to the front of pickled mol and store the
           // buffer
@@ -162,7 +176,19 @@ void umbra_mol_from_smiles(DataChunk &args, ExpressionState &state,
           // It's RDKit Molecule data.
           //
           //
-          return StringVector::AddString(result, pickled_mol);
+
+          std::cout << "\nserializing umbra mol: " << std::endl;
+          auto b_umbra_mol = serialize_umbra_mol(umbra_mol);
+          std::cout << "\nb_umbra_mol: " << std::endl;
+          for (auto i = 0; i < b_umbra_mol.size(); i++) {
+            printf("%02x ", static_cast<unsigned char>(b_umbra_mol[i]));
+          }
+
+          std::cout << "\ndeserialized: " << std::endl;
+          auto d_umbra_mol = deserialize_umbra_mol(b_umbra_mol);
+          std::cout << d_umbra_mol << std::endl;
+
+          return StringVector::AddString(result, b_umbra_mol);
         } catch (...) {
           mask.SetInvalid(idx);
           return string_t();
