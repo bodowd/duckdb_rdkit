@@ -32,7 +32,7 @@ public:
   uint32_t num_bonds;
   uint32_t amw;
   uint32_t num_rings;
-  size_t bmol_size;
+  uint32_t bmol_size;
   std::string bmol;
 
   // default constructor for deserialization
