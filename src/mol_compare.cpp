@@ -2,7 +2,10 @@
 #include "duckdb/common/enums/vector_type.hpp"
 #include "duckdb/common/types/value.hpp"
 #include "duckdb/common/types/vector.hpp"
+#include "duckdb/execution/expression_executor_state.hpp"
+#include "duckdb/function/scalar_function.hpp"
 #include "duckdb/main/extension_util.hpp"
+#include "mol_formats.hpp"
 #include "types.hpp"
 #include <GraphMol/Descriptors/MolDescriptors.h>
 #include <GraphMol/GraphMol.h>
@@ -88,12 +91,52 @@ static void is_exact_match(DataChunk &args, ExpressionState &state,
       });
 }
 
+bool umbra_mol_cmp(umbra_mol_t m1, umbra_mol_t m2) {
+  if (m1.num_atoms != m2.num_atoms || m1.num_bonds != m2.num_bonds ||
+      m1.amw != m2.amw || m1.num_rings != m2.num_rings) {
+    return false;
+  }
+
+  std::unique_ptr<RDKit::ROMol> left_mol(new RDKit::ROMol());
+  std::unique_ptr<RDKit::ROMol> right_mol(new RDKit::ROMol());
+
+  RDKit::MolPickler::molFromPickle(m1.bmol, *left_mol);
+  RDKit::MolPickler::molFromPickle(m2.bmol, *right_mol);
+  return mol_cmp(*left_mol, *right_mol);
+}
+
+static void umbra_is_exact_match(DataChunk &args, ExpressionState &state,
+                                 Vector &result) {
+  D_ASSERT(args.ColumnCount() == 2);
+  // args.data[i] is a FLAT_VECTOR
+  auto &left = args.data[0];
+  auto &right = args.data[1];
+
+  BinaryExecutor::Execute<string_t, string_t, bool>(
+      left, right, result, args.size(),
+      [&](string_t &left_umbra_blob, string_t &right_umbra_blob) {
+        auto left_umbra_mol =
+            deserialize_umbra_mol(left_umbra_blob.GetString());
+        auto right_umbra_mol =
+            deserialize_umbra_mol(right_umbra_blob.GetString());
+
+        auto compare_result = umbra_mol_cmp(left_umbra_mol, right_umbra_mol);
+        return compare_result;
+      });
+}
+
 void RegisterCompareFunctions(DatabaseInstance &instance) {
   ScalarFunctionSet set("is_exact_match");
   // left type and right type
   set.AddFunction(ScalarFunction({duckdb_rdkit::Mol(), duckdb_rdkit::Mol()},
                                  LogicalType::BOOLEAN, is_exact_match));
   ExtensionUtil::RegisterFunction(instance, set);
+
+  ScalarFunctionSet set_umbra_exact_match("umbra_is_exact_match");
+  set_umbra_exact_match.AddFunction(
+      ScalarFunction({duckdb_rdkit::UmbraMol(), duckdb_rdkit::UmbraMol()},
+                     LogicalType::BOOLEAN, umbra_is_exact_match));
+  ExtensionUtil::RegisterFunction(instance, set_umbra_exact_match);
 }
 
 } // namespace duckdb_rdkit
