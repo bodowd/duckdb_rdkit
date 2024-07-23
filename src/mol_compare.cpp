@@ -92,11 +92,15 @@ static void is_exact_match(DataChunk &args, ExpressionState &state,
 }
 
 bool umbra_mol_cmp(umbra_mol_t m1, umbra_mol_t m2) {
+  // check the prefix
+  // if any of these values are not equal between the two molecules,
+  // there is no way the molecules are the same
   if (m1.num_atoms != m2.num_atoms || m1.num_bonds != m2.num_bonds ||
       m1.amw != m2.amw || m1.num_rings != m2.num_rings) {
     return false;
   }
 
+  // otherwise, run a full check on the molecule objects
   std::unique_ptr<RDKit::ROMol> left_mol(new RDKit::ROMol());
   std::unique_ptr<RDKit::ROMol> right_mol(new RDKit::ROMol());
 

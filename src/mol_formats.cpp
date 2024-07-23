@@ -164,8 +164,6 @@ void umbra_mol_from_smiles(DataChunk &args, ExpressionState &state,
 
           auto b_umbra_mol = serialize_umbra_mol(umbra_mol);
 
-          auto d_umbra_mol = deserialize_umbra_mol(b_umbra_mol);
-
           return StringVector::AddString(result, b_umbra_mol);
         } catch (...) {
           mask.SetInvalid(idx);
