@@ -36,16 +36,6 @@ public:
               uint32_t num_rings, const std::string &binary_mol)
       : num_atoms(num_atoms), num_bonds(num_bonds), amw(amw),
         num_rings(num_rings), bmol_size(binary_mol.size()), bmol(binary_mol) {
-    // std::cout << "making mol_t" << std::endl;
-    // std::cout << "num_atoms: " << num_atoms << std::endl;
-    // std::cout << "num_bonds: " << num_bonds << std::endl;
-    // std::cout << "amw: " << amw << std::endl;
-    // std::cout << "num_rings: " << num_rings << std::endl;
-    // std::cout << "binary_mol: " << std::endl;
-    // for (size_t i = 0; i < bmol_size; ++i) {
-    //   auto a = bmol;
-    //   printf("%02x ", static_cast<unsigned char>(a[i]));
-    // }
 
     if (num_atoms > UINT32_MAX_SIZE || num_bonds > UINT32_MAX_SIZE ||
         amw > UINT32_MAX_SIZE || num_rings > UINT32_MAX_SIZE) {
