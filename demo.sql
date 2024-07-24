@@ -45,10 +45,14 @@ SELECT pbd.prediction_method, a.value, a.relation, m.umbra_mol FROM molecule m
     INNER JOIN activities a ON a.molregno=m.id
     INNER JOIN predicted_binding_domains pbd ON pbd.activity_id=a.activity_id
     INNER JOIN compound_properties cp ON cp.molregno=m.id
-    WHERE umbra_is_exact_match(m.umbra_mol, 'COc1cc(/C=C/C(=O)OCCCCCCN(C)CCCCOC(=O)c2c3ccccc3cc3ccccc23)cc(OC)c1OC')
-    ;
+    WHERE umbra_is_exact_match(m.umbra_mol, 'COc1cc(/C=C/C(=O)OCCCCCCN(C)CCCCOC(=O)c2c3ccccc3cc3ccccc23)cc(OC)c1OC');
 
-
+-- same query but in postgres
+SELECT pbd.prediction_method, a.value, a.relation, m.rdkit_mol FROM compound_structures m
+    INNER JOIN activities a ON a.molregno=m.molregno
+    INNER JOIN predicted_binding_domains pbd ON pbd.activity_id=a.activity_id
+    INNER JOIN compound_properties cp ON cp.molregno=m.molregno
+    WHERE m.rdkit_mol@='COc1cc(/C=C/C(=O)OCCCCCCN(C)CCCCOC(=O)c2c3ccccc3cc3ccccc23)cc(OC)c1OC';
 
 
 
@@ -63,8 +67,7 @@ SELECT pbd.prediction_method, a.value, a.relation, m.umbra_mol FROM molecule m
   INNER JOIN activities a ON a.molregno=m.id
   INNER JOIN predicted_binding_domains pbd ON pbd.activity_id=a.activity_id
   INNER JOIN compound_properties cp ON cp.molregno=m.id
-  WHERE umbra_is_exact_match(m.umbra_mol, 'CC(=O)Nc1nnc(S(N)(=O)=O)s1')
-  ;
+  WHERE umbra_is_exact_match(m.umbra_mol, 'CC(=O)Nc1nnc(S(N)(=O)=O)s1');
 
 
 
