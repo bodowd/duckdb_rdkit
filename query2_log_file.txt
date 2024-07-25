@@ -1,0 +1,5 @@
+left_mol: O=C=O,right_mol: CCC
+left_mol: CC=O,right_mol: CCC
+left_mol: [N-]=[N+]=O,right_mol: CCC
+left_mol: C=CO,right_mol: CCC
+left_mol: CCC,right_mol: CCC

@@ -12,6 +12,7 @@
 #include <GraphMol/MolPickler.h>
 #include <GraphMol/SmilesParse/SmilesWrite.h>
 #include <GraphMol/Substruct/SubstructMatch.h>
+#include <cstdio>
 #include <memory>
 
 namespace duckdb_rdkit {
@@ -106,6 +107,14 @@ bool umbra_mol_cmp(umbra_mol_t m1, umbra_mol_t m2) {
 
   RDKit::MolPickler::molFromPickle(m1.bmol, *left_mol);
   RDKit::MolPickler::molFromPickle(m2.bmol, *right_mol);
+
+  // experiment: log when the above check does not short circuit
+  {
+    std::ofstream log_file("log_file.txt",
+                           std::ios_base::out | std::ios_base::app);
+    log_file << "left_mol: " << rdkit_mol_to_smiles(*left_mol) << ","
+             << "right_mol: " << rdkit_mol_to_smiles(*right_mol) << std::endl;
+  }
   return mol_cmp(*left_mol, *right_mol);
 }
 
