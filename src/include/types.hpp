@@ -32,8 +32,8 @@ public:
   // default constructor for deserialization
   umbra_mol_t() = default;
 
-  umbra_mol_t(uint32_t num_atoms, uint32_t num_bonds, uint32_t amw,
-              uint32_t num_rings, const std::string &binary_mol)
+  umbra_mol_t(uint16_t num_atoms, uint16_t num_bonds, uint16_t amw,
+              uint16_t num_rings, const std::string &binary_mol)
       : num_atoms(num_atoms), num_bonds(num_bonds), amw(amw),
         num_rings(num_rings), bmol_size(binary_mol.size()), bmol(binary_mol) {
 
