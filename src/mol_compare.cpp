@@ -94,11 +94,13 @@ static void is_exact_match(DataChunk &args, ExpressionState &state,
 
 bool umbra_mol_cmp(umbra_mol_t m1, umbra_mol_t m2) {
   // check the prefix
-  // if any of these values are not equal between the two molecules,
-  // there is no way the molecules are the same
-  if (m1.num_atoms != m2.num_atoms || m1.num_bonds != m2.num_bonds ||
-      m1.amw != m2.amw || m1.num_rings != m2.num_rings) {
-    return false;
+  std::cout << "umbra_mol_cmp: " << std::endl;
+  std::cout << memcmp(m1.prefix, m2.prefix, m1.PREFIX_SIZE) << std::endl;
+  std::cout << "umbra mols: " << std::endl;
+  std::cout << m1 << std::endl;
+  std::cout << m2 << std::endl;
+  if (memcmp(m1.prefix, m2.prefix, m1.PREFIX_SIZE) == 0) {
+    return true;
   }
 
   // otherwise, run a full check on the molecule objects

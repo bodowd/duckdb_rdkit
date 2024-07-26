@@ -14,7 +14,6 @@
 #include <GraphMol/SmilesParse/SmilesParse.h>
 #include <GraphMol/SmilesParse/SmilesWrite.h>
 #include <duckdb/parser/parsed_data/create_scalar_function_info.hpp>
-#include <system_error>
 
 namespace duckdb_rdkit {
 
@@ -56,6 +55,8 @@ void UmbraMolToVarchar(Vector &source, Vector &result, idx_t count) {
       source, result, count, [&](string_t b_umbra_mol) {
         auto umbra_mol = umbra_mol_t();
         auto d_umbra_mol = deserialize_umbra_mol(b_umbra_mol.GetString());
+        // std::cout << "\ndeserialized in cast: " << std::endl;
+        // std::cout << d_umbra_mol << std::endl;
         auto rdkit_mol = rdkit_binary_mol_to_mol(d_umbra_mol.bmol);
         auto smiles = rdkit_mol_to_smiles(*rdkit_mol);
         return StringVector::AddString(result, smiles);
@@ -72,15 +73,9 @@ void VarcharToUmbraMol(Vector &source, Vector &result, idx_t count) {
   UnaryExecutor::Execute<string_t, string_t>(
       source, result, count, [&](string_t smiles) {
         auto mol = rdkit_mol_from_smiles(smiles.GetString());
-        // add the meta data to the front of pickled mol and store the buffer
-        auto num_atoms = mol->getNumAtoms();
-        auto num_bonds = mol->getNumBonds();
-        auto amw = RDKit::Descriptors::calcAMW(*mol);
-        auto num_rings = mol->getRingInfo()->numRings();
-
         auto pickled_mol = rdkit_mol_to_binary_mol(*mol);
-        auto umbra_mol =
-            umbra_mol_t(num_atoms, num_bonds, amw, num_rings, pickled_mol);
+        auto can_smiles = rdkit_mol_to_smiles(*mol);
+        auto umbra_mol = umbra_mol_t(can_smiles.data(), pickled_mol);
         auto serialized = serialize_umbra_mol(umbra_mol);
 
         return StringVector::AddString(result, serialized);

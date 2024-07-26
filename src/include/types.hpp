@@ -1,7 +1,7 @@
 #pragma once
 #include "common.hpp"
 #include "duckdb/common/exception.hpp"
-#include <cstdint>
+#include <cstddef>
 #include <sys/types.h>
 
 namespace duckdb_rdkit {
@@ -13,47 +13,39 @@ void RegisterTypes(DatabaseInstance &instance);
 struct umbra_mol_t {
 
 public:
-  static constexpr idx_t NUM_ATOMS_BYTES = 4;
-  static constexpr idx_t NUM_BONDS_BYTES = 4;
-  static constexpr idx_t AMW_BYTES = 4;
-  static constexpr idx_t NUM_RINGS_BYTES = 4;
-  static constexpr idx_t BMOL_SIZE_BYTES = 4;
-  static constexpr idx_t HEADER_SIZE = NUM_ATOMS_BYTES + NUM_BONDS_BYTES +
-                                       AMW_BYTES + NUM_RINGS_BYTES +
-                                       BMOL_SIZE_BYTES;
-  static constexpr idx_t UINT32_MAX_SIZE = NumericLimits<uint32_t>::Maximum();
-  uint32_t num_atoms;
-  uint32_t num_bonds;
-  uint32_t amw;
-  uint32_t num_rings;
-  uint32_t bmol_size;
+  char prefix[8];
   std::string bmol;
+
+  static constexpr idx_t PREFIX_SIZE = 8;
 
   // default constructor for deserialization
   umbra_mol_t() = default;
 
-  umbra_mol_t(uint32_t num_atoms, uint32_t num_bonds, uint32_t amw,
-              uint32_t num_rings, const std::string &binary_mol)
-      : num_atoms(num_atoms), num_bonds(num_bonds), amw(amw),
-        num_rings(num_rings), bmol_size(binary_mol.size()), bmol(binary_mol) {
+  umbra_mol_t(const char *canonical_smiles, const std::string &binary_mol)
+      : bmol(binary_mol) {
 
-    if (num_atoms > UINT32_MAX_SIZE || num_bonds > UINT32_MAX_SIZE ||
-        amw > UINT32_MAX_SIZE || num_rings > UINT32_MAX_SIZE) {
-      throw OutOfRangeException(
-          "Cannot support a molecule of this size. There are properties of "
-          "this molecule larger than the supported size: '%d'",
-          UINT32_MAX_SIZE);
+    std::size_t len = std::strlen(canonical_smiles);
+    // zero out the prefix
+    std::memset(prefix, 0, PREFIX_SIZE);
+
+    // for (auto i = 0; i < len; i++) {
+    //   printf("%02x ", static_cast<unsigned char>(canonical_smiles[i]));
+    // }
+    std::memcpy(prefix, canonical_smiles, PREFIX_SIZE);
+    if (len < PREFIX_SIZE) {
+      // fill the prefix with zeros if the len of the smiles string is <
+      // PREFIX_SIZE
+      std::memset(prefix + len, 0, PREFIX_SIZE - len);
     }
   }
 
   friend std::ostream &operator<<(std::ostream &out,
                                   const umbra_mol_t &umbra_mol) {
-    out << "num_atoms: " << umbra_mol.num_atoms << '\n';
-    out << "num_bonds: " << umbra_mol.num_bonds << '\n';
-    out << "amw: " << umbra_mol.amw << '\n';
-    out << "num_rings: " << umbra_mol.num_rings << '\n';
-    out << "bmol_size: " << umbra_mol.bmol_size << '\n';
-    out << "bmol: " << '\n';
+    out << "prefix: " << '\n';
+    for (char i : umbra_mol.prefix) {
+      printf("%02x ", static_cast<unsigned char>(i));
+    }
+    out << "\nbmol: " << '\n';
     for (char byte : umbra_mol.bmol) {
       printf("%02x ", static_cast<unsigned char>(byte));
     }

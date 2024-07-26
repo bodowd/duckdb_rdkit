@@ -51,56 +51,29 @@ std::string rdkit_mol_to_binary_mol(const RDKit::ROMol mol) {
 std::string serialize_umbra_mol(umbra_mol_t umbra_mol) {
   std::vector<char> buffer;
 
-  buffer.insert(buffer.end(),
-                reinterpret_cast<const char *>(&umbra_mol.num_atoms),
-                reinterpret_cast<const char *>(&umbra_mol.num_atoms) +
-                    sizeof(umbra_mol.num_atoms));
-  buffer.insert(buffer.end(),
-                reinterpret_cast<const char *>(&umbra_mol.num_bonds),
-                reinterpret_cast<const char *>(&umbra_mol.num_bonds) +
-                    umbra_mol.NUM_BONDS_BYTES);
-  buffer.insert(buffer.end(), reinterpret_cast<const char *>(&umbra_mol.amw),
-                reinterpret_cast<const char *>(&umbra_mol.amw) +
-                    umbra_mol.AMW_BYTES);
-  buffer.insert(buffer.end(),
-                reinterpret_cast<const char *>(&umbra_mol.num_rings),
-                reinterpret_cast<const char *>(&umbra_mol.num_rings) +
-                    umbra_mol.NUM_RINGS_BYTES);
-  buffer.insert(buffer.end(),
-                reinterpret_cast<const char *>(&umbra_mol.bmol_size),
-                reinterpret_cast<const char *>(&umbra_mol.bmol_size) +
-                    umbra_mol.BMOL_SIZE_BYTES);
+  buffer.insert(buffer.end(), reinterpret_cast<const char *>(&umbra_mol.prefix),
+                reinterpret_cast<const char *>(&umbra_mol.prefix) +
+                    umbra_mol.PREFIX_SIZE);
   buffer.insert(buffer.end(), umbra_mol.bmol.begin(), umbra_mol.bmol.end());
 
   return std::string(buffer.begin(), buffer.end());
 }
 
 umbra_mol_t deserialize_umbra_mol(std::string buffer) {
+  // std::cout << "buffer in deserialize_umbra_mol: " << std::endl;
+  // for (char byte : buffer) {
+  //   printf("%02x ", static_cast<unsigned char>(byte));
+  // }
   umbra_mol_t umbra_mol;
   size_t offset = 0;
 
   // Copy each member from the string buffer
-  std::memcpy(&umbra_mol.num_atoms, &buffer[offset], umbra_mol.NUM_ATOMS_BYTES);
-  offset += umbra_mol.NUM_ATOMS_BYTES;
-  std::memcpy(&umbra_mol.num_bonds, &buffer[offset], umbra_mol.NUM_BONDS_BYTES);
-  offset += umbra_mol.NUM_BONDS_BYTES;
-  std::memcpy(&umbra_mol.amw, &buffer[offset], umbra_mol.AMW_BYTES);
-  offset += umbra_mol.AMW_BYTES;
-  std::memcpy(&umbra_mol.num_rings, &buffer[offset], umbra_mol.NUM_RINGS_BYTES);
-  offset += umbra_mol.NUM_RINGS_BYTES;
-  std::memcpy(&umbra_mol.bmol_size, &buffer[offset], umbra_mol.BMOL_SIZE_BYTES);
-  offset += umbra_mol.BMOL_SIZE_BYTES;
+  std::memcpy(&umbra_mol.prefix, &buffer[offset], umbra_mol.PREFIX_SIZE);
+  offset += umbra_mol.PREFIX_SIZE;
 
-  // std::vector<char> vec;
-  // auto substring = buffer.substr(offset, offset + umbra_mol.bmol_size);
-  // vec.insert(vec.end(), substring.begin(), substring.end());
-
-  umbra_mol.bmol.resize(umbra_mol.bmol_size);
-  // std::cout << "deserialize substr: " << std::endl;
-  // for (auto i = offset; i < offset + umbra_mol.bmol_size; i++) {
-  //   printf("%02x ", static_cast<unsigned char>(buffer[i]));
-  // }
-  std::memcpy(&umbra_mol.bmol[0], &buffer[offset], umbra_mol.bmol_size);
+  auto bmol_size = buffer.size() - umbra_mol.PREFIX_SIZE;
+  umbra_mol.bmol.resize(bmol_size);
+  std::memcpy(&umbra_mol.bmol[0], &buffer[offset], bmol_size);
 
   return umbra_mol;
 }
@@ -153,16 +126,12 @@ void umbra_mol_from_smiles(DataChunk &args, ExpressionState &state,
           auto mol = rdkit_mol_from_smiles(smiles.GetString());
           auto pickled_mol = rdkit_mol_to_binary_mol(*mol);
 
-          // add the meta data to the front of pickled mol and store the
-          // buffer
-          auto num_atoms = mol->getNumAtoms();
-          auto num_bonds = mol->getNumBonds();
-          auto amw = RDKit::Descriptors::calcAMW(*mol);
-          auto num_rings = mol->getRingInfo()->numRings();
-          auto umbra_mol =
-              umbra_mol_t(num_atoms, num_bonds, amw, num_rings, pickled_mol);
+          auto can_smiles = rdkit_mol_to_smiles(*mol);
+          auto umbra_mol = umbra_mol_t(can_smiles.data(), pickled_mol);
 
           auto b_umbra_mol = serialize_umbra_mol(umbra_mol);
+
+          std::cout << umbra_mol << std::endl;
 
           return StringVector::AddString(result, b_umbra_mol);
         } catch (...) {
