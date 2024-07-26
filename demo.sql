@@ -28,6 +28,10 @@ select * from molecule where umbra_is_exact_match(umbra_mol,'CCC');
 -- copy data from pg into duckdb database using these statements, but just change the table names
 copy (select * from pg.binding_sites) to 'binding_sites.parquet' (format parquet);
 create table binding_sites as select * from 'binding_sites.parquet';
+create table assays as select * from 'assays.parquet';
+create table compound_properties as select * from 'compound_properties.parquet';
+create table molecule as select * from 'compound_structures.parquet';
+create table predicted_binding_domains as select * from 'predicted_binding_domains.parquet';
 
 
 
