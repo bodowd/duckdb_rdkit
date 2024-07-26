@@ -164,6 +164,10 @@ void umbra_mol_from_smiles(DataChunk &args, ExpressionState &state,
 
           auto b_umbra_mol = serialize_umbra_mol(umbra_mol);
 
+          for (char b : b_umbra_mol) {
+            printf("%02x ", static_cast<unsigned char>(b));
+          }
+
           return StringVector::AddString(result, b_umbra_mol);
         } catch (...) {
           mask.SetInvalid(idx);

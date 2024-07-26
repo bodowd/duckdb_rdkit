@@ -13,20 +13,20 @@ void RegisterTypes(DatabaseInstance &instance);
 struct umbra_mol_t {
 
 public:
-  static constexpr idx_t NUM_ATOMS_BYTES = 4;
-  static constexpr idx_t NUM_BONDS_BYTES = 4;
-  static constexpr idx_t AMW_BYTES = 4;
-  static constexpr idx_t NUM_RINGS_BYTES = 4;
-  static constexpr idx_t BMOL_SIZE_BYTES = 4;
+  static constexpr idx_t NUM_ATOMS_BYTES = 2;
+  static constexpr idx_t NUM_BONDS_BYTES = 2;
+  static constexpr idx_t AMW_BYTES = 2;
+  static constexpr idx_t NUM_RINGS_BYTES = 2;
+  static constexpr idx_t BMOL_SIZE_BYTES = 2;
   static constexpr idx_t HEADER_SIZE = NUM_ATOMS_BYTES + NUM_BONDS_BYTES +
                                        AMW_BYTES + NUM_RINGS_BYTES +
                                        BMOL_SIZE_BYTES;
-  static constexpr idx_t UINT32_MAX_SIZE = NumericLimits<uint32_t>::Maximum();
-  uint32_t num_atoms;
-  uint32_t num_bonds;
-  uint32_t amw;
-  uint32_t num_rings;
-  uint32_t bmol_size;
+  static constexpr idx_t UINT16_MAX_SIZE = NumericLimits<uint16_t>::Maximum();
+  uint16_t num_atoms;
+  uint16_t num_bonds;
+  uint16_t amw;
+  uint16_t num_rings;
+  uint16_t bmol_size;
   std::string bmol;
 
   // default constructor for deserialization
@@ -37,12 +37,12 @@ public:
       : num_atoms(num_atoms), num_bonds(num_bonds), amw(amw),
         num_rings(num_rings), bmol_size(binary_mol.size()), bmol(binary_mol) {
 
-    if (num_atoms > UINT32_MAX_SIZE || num_bonds > UINT32_MAX_SIZE ||
-        amw > UINT32_MAX_SIZE || num_rings > UINT32_MAX_SIZE) {
+    if (num_atoms > UINT16_MAX_SIZE || num_bonds > UINT16_MAX_SIZE ||
+        amw > UINT16_MAX_SIZE || num_rings > UINT16_MAX_SIZE) {
       throw OutOfRangeException(
           "Cannot support a molecule of this size. There are properties of "
           "this molecule larger than the supported size: '%d'",
-          UINT32_MAX_SIZE);
+          UINT16_MAX_SIZE);
     }
   }
 
