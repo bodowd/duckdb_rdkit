@@ -6,6 +6,7 @@
 #include "types.hpp"
 #include <GraphMol/Descriptors/MolDescriptors.h>
 #include <GraphMol/FileParsers/FileParsers.h>
+#include <GraphMol/Fingerprints/MACCS.h>
 #include <GraphMol/GraphMol.h>
 #include <GraphMol/MolPickler.h>
 #include <GraphMol/SmilesParse/SmartsWrite.h>
@@ -159,6 +160,13 @@ void umbra_mol_from_smiles(DataChunk &args, ExpressionState &state,
           auto num_bonds = mol->getNumBonds();
           auto amw = RDKit::Descriptors::calcAMW(*mol);
           auto num_rings = mol->getRingInfo()->numRings();
+
+          auto maccs = std::unique_ptr<ExplicitBitVect>{
+              RDKit::MACCSFingerprints::getFingerprintAsBitVect(*mol)};
+          for (auto i = 0; i < maccs->size(); i++) {
+            printf("%02x ", maccs->getBit(i));
+          }
+
           auto umbra_mol =
               umbra_mol_t(num_atoms, num_bonds, amw, num_rings, pickled_mol);
 
