@@ -109,3 +109,28 @@ select * from molecule where umbra_is_exact_match(umbra_mol,'CNC(C)[C@@H]1CC[C@@
 
 -- postgres rdkit query to find how many molecules in chembl would fail the prefix test
 select mol_numatoms(rdkit_mol), mol_numrotatablebonds(rdkit_mol), mol_amw(rdkit_mol),mol_numrings(rdkit_mol),  rdkit_mol from compound_structures group by rdkit_mol;
+
+
+
+
+-- Query 1
+select molregno,canonical_smiles, mol, umbra_mol from molecule where umbra_is_exact_match(umbra_mol,'Cc1cn([C@H]2C[C@H](N=[N+]=[N-])[C@@H](CO)O2)c(=O)[nH]c1=O');
+
+-- Query 2
+select molregno,canonical_smiles, mol, umbra_mol from molecule where umbra_is_exact_match(umbra_mol,'CCC');
+
+-- Query 3
+SELECT pbd.prediction_method, a.value, a.relation, m.umbra_mol FROM molecule m
+  INNER JOIN activities a ON a.molregno=m.molregno
+  INNER JOIN predicted_binding_domains pbd ON pbd.activity_id=a.activity_id
+  INNER JOIN compound_properties cp ON cp.molregno=m.molregno
+  WHERE umbra_is_exact_match(m.umbra_mol, 'COc1cc(/C=C/C(=O)OCCCCCCN(C)CCCCOC(=O)c2c3ccccc3cc3ccccc23)cc(OC)c1OC');
+
+-- Query 4
+SELECT avg(a.value), count(a.value), a.relation, m.umbra_mol FROM molecule m
+  INNER JOIN activities a ON a.molregno=m.molregno
+  INNER JOIN predicted_binding_domains pbd ON pbd.activity_id=a.activity_id
+  INNER JOIN compound_properties cp ON cp.molregno=m.molregno
+  WHERE umbra_is_exact_match(m.umbra_mol, 'CC(=O)Nc1nnc(S(N)(=O)=O)s1')
+  GROUP BY m.umbra_mol, a.relation;
+
