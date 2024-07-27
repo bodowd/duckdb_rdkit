@@ -1,5 +1,6 @@
 #include "common.hpp"
 #include "duckdb/common/enums/vector_type.hpp"
+#include "duckdb/common/types.hpp"
 #include "duckdb/common/types/value.hpp"
 #include "duckdb/common/types/vector.hpp"
 #include "duckdb/execution/expression_executor_state.hpp"
@@ -138,6 +139,35 @@ static void umbra_is_exact_match(DataChunk &args, ExpressionState &state,
       });
 }
 
+// return if m2 is a substructure of m1
+bool _is_substruct(const RDKit::ROMol &m1, const RDKit::ROMol &m2) {
+  // copied from chemicalite
+  RDKit::MatchVectType matchVect;
+  bool recursion_possible = true;
+  bool do_chiral_match = false; /* FIXME: make configurable getDoChiralSSS(); */
+  return RDKit::SubstructMatch(m1, m2, matchVect, recursion_possible,
+                               do_chiral_match);
+}
+
+static void is_substruct(DataChunk &args, ExpressionState &state,
+                         Vector &result) {
+  D_ASSERT(args.ColumnCount() == 2);
+  // args.data[i] is a FLAT_VECTOR
+  auto &left = args.data[0];
+  auto &right = args.data[1];
+
+  BinaryExecutor::Execute<string_t, string_t, bool>(
+      left, right, result, args.size(),
+      [&](string_t &left_blob, string_t &right_blob) {
+        std::unique_ptr<RDKit::ROMol> left_mol(new RDKit::ROMol());
+        std::unique_ptr<RDKit::ROMol> right_mol(new RDKit::ROMol());
+
+        RDKit::MolPickler::molFromPickle(left_blob.GetString(), *left_mol);
+        RDKit::MolPickler::molFromPickle(right_blob.GetString(), *right_mol);
+        return _is_substruct(*left_mol, *right_mol);
+      });
+}
+
 void RegisterCompareFunctions(DatabaseInstance &instance) {
   ScalarFunctionSet set("is_exact_match");
   // left type and right type
@@ -150,6 +180,12 @@ void RegisterCompareFunctions(DatabaseInstance &instance) {
       ScalarFunction({duckdb_rdkit::UmbraMol(), duckdb_rdkit::UmbraMol()},
                      LogicalType::BOOLEAN, umbra_is_exact_match));
   ExtensionUtil::RegisterFunction(instance, set_umbra_exact_match);
+
+  ScalarFunctionSet set_is_substruct("is_substruct");
+  set_is_substruct.AddFunction(
+      ScalarFunction({duckdb_rdkit::Mol(), duckdb_rdkit::Mol()},
+                     LogicalType::BOOLEAN, is_substruct));
+  ExtensionUtil::RegisterFunction(instance, set_is_substruct);
 }
 
 } // namespace duckdb_rdkit
