@@ -71,6 +71,10 @@ std::string serialize_umbra_mol(umbra_mol_t umbra_mol) {
                 reinterpret_cast<const char *>(&umbra_mol.bmol_size),
                 reinterpret_cast<const char *>(&umbra_mol.bmol_size) +
                     umbra_mol.BMOL_SIZE_BYTES);
+  buffer.insert(buffer.end(), reinterpret_cast<const char *>(&umbra_mol.maccs),
+                reinterpret_cast<const char *>(&umbra_mol.maccs) +
+                    umbra_mol.MACCS_SIZE_BYTES);
+
   buffer.insert(buffer.end(), umbra_mol.bmol.begin(), umbra_mol.bmol.end());
 
   return std::string(buffer.begin(), buffer.end());
@@ -91,6 +95,8 @@ umbra_mol_t deserialize_umbra_mol(std::string buffer) {
   offset += umbra_mol.NUM_RINGS_BYTES;
   std::memcpy(&umbra_mol.bmol_size, &buffer[offset], umbra_mol.BMOL_SIZE_BYTES);
   offset += umbra_mol.BMOL_SIZE_BYTES;
+  std::memcpy(&umbra_mol.maccs, &buffer[offset], umbra_mol.MACCS_SIZE_BYTES);
+  offset += umbra_mol.MACCS_SIZE_BYTES;
 
   // std::vector<char> vec;
   // auto substring = buffer.substr(offset, offset + umbra_mol.bmol_size);
@@ -163,12 +169,14 @@ void umbra_mol_from_smiles(DataChunk &args, ExpressionState &state,
 
           auto maccs = std::unique_ptr<ExplicitBitVect>{
               RDKit::MACCSFingerprints::getFingerprintAsBitVect(*mol)};
+
+          std::cout << "maccs size: " << maccs->size() << std::endl;
           for (auto i = 0; i < maccs->size(); i++) {
             printf("%02x ", maccs->getBit(i));
           }
 
-          auto umbra_mol =
-              umbra_mol_t(num_atoms, num_bonds, amw, num_rings, pickled_mol);
+          auto umbra_mol = umbra_mol_t(num_atoms, num_bonds, amw, num_rings,
+                                       std::move(maccs), pickled_mol);
 
           auto b_umbra_mol = serialize_umbra_mol(umbra_mol);
 

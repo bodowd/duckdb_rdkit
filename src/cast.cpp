@@ -77,10 +77,12 @@ void VarcharToUmbraMol(Vector &source, Vector &result, idx_t count) {
         auto num_bonds = mol->getNumBonds();
         auto amw = RDKit::Descriptors::calcAMW(*mol);
         auto num_rings = mol->getRingInfo()->numRings();
+        auto maccs = std::unique_ptr<ExplicitBitVect>{
+            RDKit::MACCSFingerprints::getFingerprintAsBitVect(*mol)};
 
         auto pickled_mol = rdkit_mol_to_binary_mol(*mol);
-        auto umbra_mol =
-            umbra_mol_t(num_atoms, num_bonds, amw, num_rings, pickled_mol);
+        auto umbra_mol = umbra_mol_t(num_atoms, num_bonds, amw, num_rings,
+                                     std::move(maccs), pickled_mol);
         auto serialized = serialize_umbra_mol(umbra_mol);
 
         return StringVector::AddString(result, serialized);
