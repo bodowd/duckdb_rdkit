@@ -4,7 +4,6 @@ install postgres;
 load postgres;
 create table molecule (id integer primary key, smiles varchar);
 insert into molecule select molregno, canonical_smiles from postgres_scan('dbname=chembl_33 host=localhost user=postgres password=example port=5435', 'public', 'compound_structures');
-
 -- create the rdkit mol column 
 alter table molecule add column mol Mol;
 update molecule set mol=mol_from_smiles(smiles);
@@ -26,6 +25,7 @@ select * from molecule where umbra_is_exact_match(umbra_mol,'CCC');
 
 
 -- copy data from pg into duckdb database using these statements, but just change the table names
+attach 'dbname=chembl_33 host=localhost user=postgres password=example port=5435' as pg (type postgres);
 copy (select * from pg.binding_sites) to 'binding_sites.parquet' (format parquet);
 create table binding_sites as select * from 'binding_sites.parquet';
 create table assays as select * from 'assays.parquet';
