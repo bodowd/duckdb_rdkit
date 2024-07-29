@@ -1,7 +1,16 @@
 #pragma once
 #include "common.hpp"
 #include "duckdb/common/exception.hpp"
+#include <GraphMol/Descriptors/MolDescriptors.h>
+#include <GraphMol/FileParsers/FileParsers.h>
 #include <GraphMol/Fingerprints/MACCS.h>
+#include <GraphMol/GraphMol.h>
+#include <GraphMol/MolPickler.h>
+#include <GraphMol/SmilesParse/SmartsWrite.h>
+#include <GraphMol/SmilesParse/SmilesParse.h>
+#include <GraphMol/SmilesParse/SmilesWrite.h>
+
+#include <bitset>
 #include <cstdint>
 #include <memory>
 #include <sys/types.h>
@@ -20,7 +29,9 @@ public:
   static constexpr idx_t AMW_BYTES = 2;
   static constexpr idx_t NUM_RINGS_BYTES = 2;
   static constexpr idx_t BMOL_SIZE_BYTES = 2;
-  static constexpr idx_t MACCS_SIZE_BYTES = 2;
+  static constexpr idx_t MACCS_SIZE_BYTES = 21;
+  static constexpr idx_t MACCS_BIT_SIZE = 167;
+
   static constexpr idx_t HEADER_SIZE = NUM_ATOMS_BYTES + NUM_BONDS_BYTES +
                                        AMW_BYTES + NUM_RINGS_BYTES +
                                        BMOL_SIZE_BYTES + MACCS_SIZE_BYTES;
@@ -30,8 +41,9 @@ public:
   uint16_t amw;
   uint16_t num_rings;
   uint16_t bmol_size;
-  char maccs[MACCS_SIZE_BYTES]; // 167 bits in RDKit is a little less than 21
-                                // bytes
+  // char maccs[MACCS_SIZE_BYTES]; // 167 bits in RDKit is a little less than 21
+  //                               // bytes
+  std::bitset<MACCS_BIT_SIZE> maccs;
   std::string bmol;
 
   // default constructor for deserialization
@@ -44,12 +56,8 @@ public:
       : num_atoms(num_atoms), num_bonds(num_bonds), amw(amw),
         num_rings(num_rings), bmol_size(binary_mol.size()), bmol(binary_mol) {
 
-    // zero out the maccs char array
-    std::memset(maccs, 0, MACCS_SIZE_BYTES);
-    std::memcpy(maccs, &maccs_bit_vect, MACCS_SIZE_BYTES);
-    std::cout << "maccs in constructor: " << std::endl;
-    for (auto i = 0; i < MACCS_SIZE_BYTES; i++) {
-      printf("%02x ", maccs[i]);
+    for (auto i = 0; i < MACCS_BIT_SIZE; i++) {
+      maccs[i] = maccs_bit_vect->getBit(i);
     }
 
     if (num_atoms > UINT16_MAX_SIZE || num_bonds > UINT16_MAX_SIZE ||
@@ -68,7 +76,11 @@ public:
     out << "amw: " << umbra_mol.amw << '\n';
     out << "num_rings: " << umbra_mol.num_rings << '\n';
     out << "bmol_size: " << umbra_mol.bmol_size << '\n';
-    out << "bmol: " << '\n';
+    out << "maccs: " << '\n';
+    for (auto i = 0; i < MACCS_BIT_SIZE; i++) {
+      printf("%02x ", umbra_mol.maccs[i]);
+    }
+    out << "\nbmol: " << '\n';
     for (char byte : umbra_mol.bmol) {
       printf("%02x ", static_cast<unsigned char>(byte));
     }

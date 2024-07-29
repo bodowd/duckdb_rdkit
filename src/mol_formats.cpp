@@ -167,22 +167,13 @@ void umbra_mol_from_smiles(DataChunk &args, ExpressionState &state,
           auto amw = RDKit::Descriptors::calcAMW(*mol);
           auto num_rings = mol->getRingInfo()->numRings();
 
-          auto maccs = std::unique_ptr<ExplicitBitVect>{
+          auto maccs_bit_vect = std::unique_ptr<ExplicitBitVect>{
               RDKit::MACCSFingerprints::getFingerprintAsBitVect(*mol)};
 
-          std::cout << "maccs size: " << maccs->size() << std::endl;
-          for (auto i = 0; i < maccs->size(); i++) {
-            printf("%02x ", maccs->getBit(i));
-          }
-
           auto umbra_mol = umbra_mol_t(num_atoms, num_bonds, amw, num_rings,
-                                       std::move(maccs), pickled_mol);
+                                       std::move(maccs_bit_vect), pickled_mol);
 
           auto b_umbra_mol = serialize_umbra_mol(umbra_mol);
-
-          // for (char b : b_umbra_mol) {
-          //   printf("%02x ", static_cast<unsigned char>(b));
-          // }
 
           return StringVector::AddString(result, b_umbra_mol);
         } catch (...) {

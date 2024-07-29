@@ -168,6 +168,61 @@ static void is_substruct(DataChunk &args, ExpressionState &state,
       });
 }
 
+// return if query is a substurcture of target
+bool _umbra_is_substruct(umbra_mol_t target, umbra_mol_t query) {
+  if ((target.maccs & query.maccs).none()) {
+    // experiment: log when the above check does short circuit
+    {
+      // otherwise, run a substructure match on the molecule objects
+      std::unique_ptr<RDKit::ROMol> left_mol(new RDKit::ROMol());
+      std::unique_ptr<RDKit::ROMol> right_mol(new RDKit::ROMol());
+      RDKit::MolPickler::molFromPickle(target.bmol, *left_mol);
+      RDKit::MolPickler::molFromPickle(query.bmol, *right_mol);
+
+      std::ofstream log_file("umbra_substruct_log_file.txt",
+                             std::ios_base::out | std::ios_base::app);
+      log_file << "left_mol: " << rdkit_mol_to_smiles(*left_mol) << ","
+               << "right_mol: " << rdkit_mol_to_smiles(*right_mol) << std::endl;
+    }
+    return false;
+  }
+
+  // otherwise, run a substructure match on the molecule objects
+  std::unique_ptr<RDKit::ROMol> left_mol(new RDKit::ROMol());
+  std::unique_ptr<RDKit::ROMol> right_mol(new RDKit::ROMol());
+
+  RDKit::MolPickler::molFromPickle(target.bmol, *left_mol);
+  RDKit::MolPickler::molFromPickle(query.bmol, *right_mol);
+
+  // copied from chemicalite
+  RDKit::MatchVectType matchVect;
+  bool recursion_possible = true;
+  bool do_chiral_match = false; /* FIXME: make configurable getDoChiralSSS(); */
+  return RDKit::SubstructMatch(*left_mol, *right_mol, matchVect,
+                               recursion_possible, do_chiral_match);
+}
+
+static void umbra_is_substruct(DataChunk &args, ExpressionState &state,
+                               Vector &result) {
+  D_ASSERT(args.ColumnCount() == 2);
+  // args.data[i] is a FLAT_VECTOR
+  auto &left = args.data[0];
+  auto &right = args.data[1];
+
+  BinaryExecutor::Execute<string_t, string_t, bool>(
+      left, right, result, args.size(),
+      [&](string_t &left_umbra_blob, string_t &right_umbra_blob) {
+        auto left_umbra_mol =
+            deserialize_umbra_mol(left_umbra_blob.GetString());
+        auto right_umbra_mol =
+            deserialize_umbra_mol(right_umbra_blob.GetString());
+
+        auto compare_result =
+            _umbra_is_substruct(left_umbra_mol, right_umbra_mol);
+        return compare_result;
+      });
+}
+
 void RegisterCompareFunctions(DatabaseInstance &instance) {
   ScalarFunctionSet set("is_exact_match");
   // left type and right type
@@ -186,6 +241,12 @@ void RegisterCompareFunctions(DatabaseInstance &instance) {
       ScalarFunction({duckdb_rdkit::Mol(), duckdb_rdkit::Mol()},
                      LogicalType::BOOLEAN, is_substruct));
   ExtensionUtil::RegisterFunction(instance, set_is_substruct);
+
+  ScalarFunctionSet set_umbra_is_substruct("umbra_is_substruct");
+  set_umbra_is_substruct.AddFunction(
+      ScalarFunction({duckdb_rdkit::UmbraMol(), duckdb_rdkit::UmbraMol()},
+                     LogicalType::BOOLEAN, umbra_is_substruct));
+  ExtensionUtil::RegisterFunction(instance, set_umbra_is_substruct);
 }
 
 } // namespace duckdb_rdkit
