@@ -77,21 +77,15 @@ void VarcharToUmbraMol(Vector &source, Vector &result, idx_t count) {
         auto num_bonds = mol->getNumBonds();
         auto amw = RDKit::Descriptors::calcAMW(*mol);
         auto num_rings = mol->getRingInfo()->numRings();
-        auto maccs = std::unique_ptr<ExplicitBitVect>{
-            RDKit::MACCSFingerprints::getFingerprintAsBitVect(*mol)};
 
         auto pickled_mol = rdkit_mol_to_binary_mol(*mol);
         auto umbra_mol = umbra_mol_t(num_atoms, num_bonds, amw, num_rings,
-                                     std::move(maccs), pickled_mol);
+                                     pickled_mol, *mol);
         auto serialized = serialize_umbra_mol(umbra_mol);
 
         return StringVector::AddString(result, serialized);
       });
 }
-
-// TODO: create an UmbraMol column. Run scan on that and see if it is faster
-// TODO: cast UmbraMol to Mol? So that you can view it as the string?
-//
 
 bool VarcharToUmbraMolCast(Vector &source, Vector &result, idx_t count,
                            CastParameters &parameters) {
@@ -108,10 +102,10 @@ void RegisterCasts(DatabaseInstance &instance) {
                                       LogicalType::VARCHAR,
                                       BoundCastInfo(MolToVarcharCast), 1);
 
-  // TODO: duplicate? delete this?
-  ExtensionUtil::RegisterCastFunction(instance, LogicalType::VARCHAR,
-                                      duckdb_rdkit::Mol(),
-                                      BoundCastInfo(VarcharToMolCast), 1);
+  // // TODO: duplicate? delete this?
+  // ExtensionUtil::RegisterCastFunction(instance, LogicalType::VARCHAR,
+  //                                     duckdb_rdkit::Mol(),
+  //                                     BoundCastInfo(VarcharToMolCast), 1);
 
   ExtensionUtil::RegisterCastFunction(instance, duckdb_rdkit::UmbraMol(),
                                       LogicalType::VARCHAR,

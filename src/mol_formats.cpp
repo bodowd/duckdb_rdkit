@@ -71,9 +71,10 @@ std::string serialize_umbra_mol(umbra_mol_t umbra_mol) {
                 reinterpret_cast<const char *>(&umbra_mol.bmol_size),
                 reinterpret_cast<const char *>(&umbra_mol.bmol_size) +
                     umbra_mol.BMOL_SIZE_BYTES);
-  buffer.insert(buffer.end(), reinterpret_cast<const char *>(&umbra_mol.maccs),
-                reinterpret_cast<const char *>(&umbra_mol.maccs) +
-                    umbra_mol.MACCS_SIZE_BYTES);
+  buffer.insert(buffer.end(),
+                reinterpret_cast<const char *>(&umbra_mol.dalke_bitset),
+                reinterpret_cast<const char *>(&umbra_mol.dalke_bitset) +
+                    umbra_mol.DALKE_BIT_VECT_SIZE_BYTES);
 
   buffer.insert(buffer.end(), umbra_mol.bmol.begin(), umbra_mol.bmol.end());
 
@@ -95,8 +96,9 @@ umbra_mol_t deserialize_umbra_mol(std::string buffer) {
   offset += umbra_mol.NUM_RINGS_BYTES;
   std::memcpy(&umbra_mol.bmol_size, &buffer[offset], umbra_mol.BMOL_SIZE_BYTES);
   offset += umbra_mol.BMOL_SIZE_BYTES;
-  std::memcpy(&umbra_mol.maccs, &buffer[offset], umbra_mol.MACCS_SIZE_BYTES);
-  offset += umbra_mol.MACCS_SIZE_BYTES;
+  std::memcpy(&umbra_mol.dalke_bitset, &buffer[offset],
+              umbra_mol.DALKE_BIT_VECT_SIZE_BYTES);
+  offset += umbra_mol.DALKE_BIT_VECT_SIZE_BYTES;
 
   // std::vector<char> vec;
   // auto substring = buffer.substr(offset, offset + umbra_mol.bmol_size);
@@ -167,12 +169,8 @@ void umbra_mol_from_smiles(DataChunk &args, ExpressionState &state,
           auto amw = RDKit::Descriptors::calcAMW(*mol);
           auto num_rings = mol->getRingInfo()->numRings();
 
-          auto maccs_bit_vect = std::unique_ptr<ExplicitBitVect>{
-              RDKit::MACCSFingerprints::getFingerprintAsBitVect(*mol)};
-
           auto umbra_mol = umbra_mol_t(num_atoms, num_bonds, amw, num_rings,
-                                       std::move(maccs_bit_vect), pickled_mol);
-
+                                       pickled_mol, *mol);
           auto b_umbra_mol = serialize_umbra_mol(umbra_mol);
 
           return StringVector::AddString(result, b_umbra_mol);

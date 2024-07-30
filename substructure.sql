@@ -1,7 +1,7 @@
 .open hundredkmol.duckdb 
 .timer on
 .mode csv
-.output substruct_mol.csv
+.output normal_substruct_mol.csv
 LOAD duckdb_rdkit;
 SET enable_progress_bar = false;
 

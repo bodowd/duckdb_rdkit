@@ -16,3 +16,4 @@ CMakeFiles
 chembl_postgres
 *.duckdb
 *.parquet
+venv

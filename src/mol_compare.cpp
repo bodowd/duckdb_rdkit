@@ -1,7 +1,6 @@
 #include "common.hpp"
-#include "duckdb/common/enums/vector_type.hpp"
 #include "duckdb/common/types.hpp"
-#include "duckdb/common/types/value.hpp"
+#include "duckdb/common/types/validity_mask.hpp"
 #include "duckdb/common/types/vector.hpp"
 #include "duckdb/execution/expression_executor_state.hpp"
 #include "duckdb/function/scalar_function.hpp"
@@ -13,6 +12,7 @@
 #include <GraphMol/MolPickler.h>
 #include <GraphMol/SmilesParse/SmilesWrite.h>
 #include <GraphMol/Substruct/SubstructMatch.h>
+#include <cstdint>
 #include <cstdio>
 #include <memory>
 
@@ -126,6 +126,7 @@ static void umbra_is_exact_match(DataChunk &args, ExpressionState &state,
   auto &left = args.data[0];
   auto &right = args.data[1];
 
+  // TODO: do I need a validity mask here?
   BinaryExecutor::Execute<string_t, string_t, bool>(
       left, right, result, args.size(),
       [&](string_t &left_umbra_blob, string_t &right_umbra_blob) {
@@ -170,21 +171,30 @@ static void is_substruct(DataChunk &args, ExpressionState &state,
 
 // return if query is a substurcture of target
 bool _umbra_is_substruct(umbra_mol_t target, umbra_mol_t query) {
-  if ((target.maccs & query.maccs).none()) {
-    // experiment: log when the above check does short circuit
-    {
-      // otherwise, run a substructure match on the molecule objects
-      std::unique_ptr<RDKit::ROMol> left_mol(new RDKit::ROMol());
-      std::unique_ptr<RDKit::ROMol> right_mol(new RDKit::ROMol());
-      RDKit::MolPickler::molFromPickle(target.bmol, *left_mol);
-      RDKit::MolPickler::molFromPickle(query.bmol, *right_mol);
+  // std::ofstream log_file("umbra_substruct_log_file.txt",
+  //                        std::ios_base::out | std::ios_base::app);
 
-      std::ofstream log_file("umbra_substruct_log_file.txt",
-                             std::ios_base::out | std::ios_base::app);
-      log_file << "left_mol: " << rdkit_mol_to_smiles(*left_mol) << ","
-               << "right_mol: " << rdkit_mol_to_smiles(*right_mol) << std::endl;
+  for (auto i = 0; i < query.dalke_bitset.size(); i++) {
+    // if the fragment exists in the query but not in the target,
+    // there is no way for a match. This only works in one direction
+    //
+    // If the fragment exists in the target, but not the query, it is still
+    // possible there is something in the query that matches the target, but
+    // is not captured in the dalke fingerprint
+    //
+    // If all fragments that are on in the query are also on in the target,
+    // this does not mean that the query is a substructure. It is possible
+    // that there is something in the query not captured in the fingerprint
+    // that is present in the query, but not in the target. For example,
+    // if the query has NCCCCCCCC, and the target has the N bit set,
+    // but it could be that the target is only NC
+    //
+    // It is only possible to short-circuit in the false case, not in the
+    // true case
+    if (query.dalke_bitset[i] && !target.dalke_bitset[i]) {
+      // log_file << "short circuited" << std::endl;
+      return false;
     }
-    return false;
   }
 
   // otherwise, run a substructure match on the molecule objects
