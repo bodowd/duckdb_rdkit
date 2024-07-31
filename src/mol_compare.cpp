@@ -173,7 +173,6 @@ static void is_substruct(DataChunk &args, ExpressionState &state,
 bool _umbra_is_substruct(umbra_mol_t target, umbra_mol_t query) {
   // std::ofstream log_file("umbra_substruct_log_file.txt",
   //                        std::ios_base::out | std::ios_base::app);
-
   for (auto i = 0; i < query.dalke_bitset.size(); i++) {
     // if the fragment exists in the query but not in the target,
     // there is no way for a match. This only works in one direction
@@ -218,7 +217,15 @@ static void umbra_is_substruct(DataChunk &args, ExpressionState &state,
   // args.data[i] is a FLAT_VECTOR
   auto &left = args.data[0];
   auto &right = args.data[1];
+  // std::cout << "UMBRA IS SUBSTRUCT CALLED!" << std::endl;
 
+  // cache binary molecules (which come from query smiles -- the
+  // right_umbra_blob) that have been seen so we do not need to regenerate the
+  // DalkeFP because that is costly
+  std::map<std::string, std::bitset<umbra_mol_t::DALKE_BIT_VECT_SIZE_BITS>>
+      seen;
+  // std::cout << "SEEN SIZE" << std::endl;
+  // std::cout << seen.size() << std::endl;
   BinaryExecutor::Execute<string_t, string_t, bool>(
       left, right, result, args.size(),
       [&](string_t &left_umbra_blob, string_t &right_umbra_blob) {
@@ -227,6 +234,25 @@ static void umbra_is_substruct(DataChunk &args, ExpressionState &state,
         auto right_umbra_mol =
             deserialize_umbra_mol(right_umbra_blob.GetString());
 
+        auto it = seen.find(right_umbra_mol.bmol);
+
+        // we have seen this molecule already, just use the stored
+        // dalke fp
+        if (it != seen.end()) {
+          // std::cout << "CACHE HIT" << std::endl;
+          right_umbra_mol.dalke_bitset = it->second;
+          // std::cout << right_umbra_mol << std::endl;
+        } else {
+          // std::cout << "CACHE MISS" << std::endl;
+          // std::cout << "rightt umbra mol" << std::endl;
+          // std::cout << right_umbra_mol << std::endl;
+          right_umbra_mol.GenerateDalkeFP();
+          seen.insert(
+              std::pair(right_umbra_mol.bmol, right_umbra_mol.dalke_bitset));
+          // std::cout << right_umbra_mol << std::endl;
+        }
+        // std::cout << "SEEN SIZE" << std::endl;
+        // std::cout << seen.size() << std::endl;
         auto compare_result =
             _umbra_is_substruct(left_umbra_mol, right_umbra_mol);
         return compare_result;

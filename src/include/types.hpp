@@ -77,6 +77,50 @@ private:
                                                {"CccC", "1"},
                                                {"ccccc(c)c", "3"}};
 
+  void make_dalke_fp() {
+    std::unique_ptr<RDKit::ROMol> target(new RDKit::ROMol());
+    RDKit::MolPickler::molFromPickle(bmol, *target);
+    // std::cout << "Making Dalke FP" << std::endl;
+    RDKit::SubstructMatchParameters params;
+    params.uniquify = true;
+    params.useQueryQueryMatches = false;
+    params.recursionPossible = true;
+    params.useChirality = false;
+    params.maxMatches = 10;
+    params.numThreads = 1;
+
+    uint8_t curBit = 0;
+    // for each of the dalke fragments, check if it is found
+    // in the target molecule, the one that an UmbraMol will be constructed for
+    // the dalke fp is the query molecule
+    for (const auto &fp : dalke_fp) {
+      std::unique_ptr<RDKit::ROMol> dalke_fp_mol;
+
+      try {
+        dalke_fp_mol.reset(RDKit::SmilesToMol(fp[0], 0, false));
+      } catch (std::exception &e) {
+        std::string msg = StringUtil::Format("%s", typeid(e).name());
+        throw FatalException(msg);
+      }
+
+      auto matchVect = RDKit::SubstructMatch(*target, *dalke_fp_mol, params);
+
+      // if the target has the fp substructure in it at least $number of times
+      // it appears, set that bit
+      for (auto i = 1; i < fp.size(); i++) {
+        if (matchVect.size() >= std::stoi(fp[i])) {
+          dalke_bitset.set(curBit);
+        }
+
+        curBit++;
+      }
+    }
+
+    D_ASSERT(curBit == 55);
+
+    ;
+  }
+
 public:
   static constexpr idx_t NUM_ATOMS_BYTES = 2;
   static constexpr idx_t NUM_BONDS_BYTES = 2;
@@ -101,6 +145,25 @@ public:
 
   // default constructor for deserialization
   umbra_mol_t() = default;
+  // umbra_mol_t(uint16_t num_atoms, uint16_t num_bonds, uint16_t amw,
+  //             uint16_t num_rings, const std::string &binary_mol,
+  //             const RDKit::ROMol &mol, bool dalke_fp)
+  //     : num_atoms(num_atoms), num_bonds(num_bonds), amw(amw),
+  //       num_rings(num_rings), bmol_size(binary_mol.size()), bmol(binary_mol)
+  //       {
+  //
+  //   if (num_atoms > UINT16_MAX_SIZE || num_bonds > UINT16_MAX_SIZE ||
+  //       amw > UINT16_MAX_SIZE || num_rings > UINT16_MAX_SIZE) {
+  //     throw OutOfRangeException(
+  //         "Cannot support a molecule of this size. There are properties of "
+  //         "this molecule larger than the supported size: '%d'",
+  //         UINT16_MAX_SIZE);
+  //   }
+  //
+  //   if (dalke_fp) {
+  //     GenerateDalkeFP();
+  //   }
+  // }
 
   umbra_mol_t(uint16_t num_atoms, uint16_t num_bonds, uint16_t amw,
               uint16_t num_rings, const std::string &binary_mol,
@@ -115,9 +178,9 @@ public:
           "this molecule larger than the supported size: '%d'",
           UINT16_MAX_SIZE);
     }
-
-    make_dalke_fp(mol);
   }
+
+  void GenerateDalkeFP() { make_dalke_fp(); }
 
   friend std::ostream &operator<<(std::ostream &out,
                                   const umbra_mol_t &umbra_mol) {
@@ -133,47 +196,6 @@ public:
       printf("%02x ", static_cast<unsigned char>(byte));
     }
     return out;
-  }
-
-  void make_dalke_fp(const RDKit::ROMol &target) {
-    RDKit::SubstructMatchParameters params;
-    params.uniquify = true;
-    params.useQueryQueryMatches = false;
-    params.recursionPossible = true;
-    params.useChirality = false;
-    params.maxMatches = 10;
-    params.numThreads = 1;
-
-    uint8_t curBit = 0;
-    // for each of the dalke fragments, check if it is found
-    // in the target molecule, the one that an UmbraMol will be constructed for
-    // the dalke fp is the query molecule
-    for (const auto &fp : dalke_fp) {
-      std::unique_ptr<RDKit::ROMol> dalke_fp_mol;
-
-      try {
-        dalke_fp_mol.reset(RDKit::SmilesToMol(fp[0], 0, false));
-      } catch (std::exception &e) {
-        std::string msg = StringUtil::Format("%s", typeid(e).name());
-        throw FatalException(msg);
-      }
-
-      auto matchVect = RDKit::SubstructMatch(target, *dalke_fp_mol, params);
-
-      // if the target has the fp substructure in it at least $number of times
-      // it appears, set that bit
-      for (auto i = 1; i < fp.size(); i++) {
-        if (matchVect.size() >= std::stoi(fp[i])) {
-          dalke_bitset.set(curBit);
-        }
-
-        curBit++;
-      }
-    }
-
-    D_ASSERT(curBit == 55);
-
-    ;
   }
 };
 

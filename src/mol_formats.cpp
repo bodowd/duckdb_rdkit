@@ -171,6 +171,7 @@ void umbra_mol_from_smiles(DataChunk &args, ExpressionState &state,
 
           auto umbra_mol = umbra_mol_t(num_atoms, num_bonds, amw, num_rings,
                                        pickled_mol, *mol);
+          umbra_mol.GenerateDalkeFP();
           auto b_umbra_mol = serialize_umbra_mol(umbra_mol);
 
           return StringVector::AddString(result, b_umbra_mol);
