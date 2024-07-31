@@ -14,8 +14,8 @@ update molecule set umbra_mol=umbra_mol_from_smiles(mol);
 
 
 -- search using rdkit mol object
-select molregno, canonical_smiles, rdkit_mol, umbra_mol from molecule where is_exact_match(mol,'Cc1cn([C@H]2C[C@H](N=[N+]=[N-])[C@@H](CO)O2)c(=O)[nH]c1=O');
-select molregno, canonical_smiles, rdkit_mol, umbra_mol from molecule where is_exact_match(mol,'CCC');
+select molregno, canonical_smiles, rdkit_mol, umbra_mol from molecule where is_exact_match(rdkit_mol,'Cc1cn([C@H]2C[C@H](N=[N+]=[N-])[C@@H](CO)O2)c(=O)[nH]c1=O');
+select molregno, canonical_smiles, rdkit_mol, umbra_mol from molecule where is_exact_match(rdkit_mol,'CCC');
 
 -- using umbra mol 
 select molregno, canonical_smiles, rdkit_mol, umbra_mol  from molecule where umbra_is_exact_match(umbra_mol,'Cc1cn([C@H]2C[C@H](N=[N+]=[N-])[C@@H](CO)O2)c(=O)[nH]c1=O');
