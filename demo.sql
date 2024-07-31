@@ -78,17 +78,17 @@ SELECT pbd.prediction_method, a.value, a.relation, m.umbra_mol FROM molecule m
 
 -- standard mol
 SELECT avg(a.value), count(a.value), a.relation, m.mol FROM molecule m
-INNER JOIN activities a ON a.molregno=m.id
+INNER JOIN activities a ON a.molregno=m.molregno
 INNER JOIN predicted_binding_domains pbd ON pbd.activity_id=a.activity_id
-INNER JOIN compound_properties cp ON cp.molregno=m.id
+INNER JOIN compound_properties cp ON cp.molregno=m.molregno
 WHERE is_exact_match(m.mol, 'CC(=O)Nc1nnc(S(N)(=O)=O)s1')
 GROUP BY m.mol, a.relation;
 
 -- now with umbra mol
 SELECT avg(a.value), count(a.value), a.relation, m.umbra_mol FROM molecule m
-INNER JOIN activities a ON a.molregno=m.id
+INNER JOIN activities a ON a.molregno=m.molregno
 INNER JOIN predicted_binding_domains pbd ON pbd.activity_id=a.activity_id
-INNER JOIN compound_properties cp ON cp.molregno=m.id
+INNER JOIN compound_properties cp ON cp.molregno=m.molregno
 WHERE umbra_is_exact_match(m.umbra_mol, 'CC(=O)Nc1nnc(S(N)(=O)=O)s1')
 GROUP BY m.umbra_mol, a.relation;
 
