@@ -224,8 +224,10 @@ static void umbra_is_substruct(DataChunk &args, ExpressionState &state,
   // DalkeFP because that is costly
   std::map<std::string, std::bitset<umbra_mol_t::DALKE_BIT_VECT_SIZE_BITS>>
       seen;
-  // std::cout << "SEEN SIZE" << std::endl;
-  // std::cout << seen.size() << std::endl;
+
+  std::ofstream log_file("log_file.txt",
+                         std::ios_base::out | std::ios_base::app);
+
   BinaryExecutor::Execute<string_t, string_t, bool>(
       left, right, result, args.size(),
       [&](string_t &left_umbra_blob, string_t &right_umbra_blob) {
@@ -239,20 +241,17 @@ static void umbra_is_substruct(DataChunk &args, ExpressionState &state,
         // we have seen this molecule already, just use the stored
         // dalke fp
         if (it != seen.end()) {
-          // std::cout << "CACHE HIT" << std::endl;
           right_umbra_mol.dalke_bitset = it->second;
-          // std::cout << right_umbra_mol << std::endl;
+          log_file << "cache hit" << std::endl;
         } else {
-          // std::cout << "CACHE MISS" << std::endl;
-          // std::cout << "rightt umbra mol" << std::endl;
-          // std::cout << right_umbra_mol << std::endl;
+          log_file << "cache miss" << std::endl;
+          log_file << "rightt umbra mol: "
+                   << right_umbra_mol.dalke_bitset.to_string() << std::endl;
           right_umbra_mol.GenerateDalkeFP();
           seen.insert(
               std::pair(right_umbra_mol.bmol, right_umbra_mol.dalke_bitset));
-          // std::cout << right_umbra_mol << std::endl;
+          log_file << right_umbra_mol.dalke_bitset.to_string() << std::endl;
         }
-        // std::cout << "SEEN SIZE" << std::endl;
-        // std::cout << seen.size() << std::endl;
         auto compare_result =
             _umbra_is_substruct(left_umbra_mol, right_umbra_mol);
         return compare_result;

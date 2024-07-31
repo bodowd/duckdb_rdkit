@@ -78,7 +78,6 @@ private:
   void make_dalke_fp() {
     std::unique_ptr<RDKit::ROMol> target(new RDKit::ROMol());
     RDKit::MolPickler::molFromPickle(bmol, *target);
-    // std::cout << "Making Dalke FP" << std::endl;
     RDKit::SubstructMatchParameters params;
     params.uniquify = true;
     params.useQueryQueryMatches = false;
