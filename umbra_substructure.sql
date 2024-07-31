@@ -107,3 +107,17 @@ SELECT umbra_is_substruct(umbra_mol, 'OC(=O)C1=CC=CC=C1O') as s, count(*) from m
 -- SELECT umbra_is_substruct(umbra_mol, 'CC') as s, count(*) from molecule group by s;
 -- SELECT umbra_is_substruct(umbra_mol, 'CC(C)C1(C)SC(Nc2ccccc2C(F)(F)F)=NC1=O') as s, count(*) from molecule group by s;
 
+
+-- chembl 33
+SELECT count(*) FROM molecule m
+      INNER JOIN activities a ON a.molregno=m.molregno
+      INNER JOIN predicted_binding_domains pbd ON pbd.activity_id=a.activity_id
+      INNER JOIN compound_properties cp ON cp.molregno=m.molregno
+      WHERE umbra_is_substruct(m.umbra_mol, 'O=CNCCc1ccccc1');
+
+SELECT a.standard_type, avg(a.value), count(a.value), a.relation, m.umbra_mol FROM molecule m
+    INNER JOIN activities a ON a.molregno=m.molregno
+    INNER JOIN predicted_binding_domains pbd ON pbd.activity_id=a.activity_id
+    INNER JOIN compound_properties cp ON cp.molregno=m.molregno
+    WHERE umbra_is_substruct(m.umbra_mol,'CC(=O)Nc1nnc(S(N)(=O)=O)s1')
+    GROUP BY m.umbra_mol, a.relation, a.standard_type;

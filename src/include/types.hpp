@@ -23,8 +23,6 @@ LogicalType Mol();
 LogicalType UmbraMol();
 void RegisterTypes(DatabaseInstance &instance);
 
-enum QueryTypes { SUBSTRUCTURE_MATCH };
-
 struct umbra_mol_t {
 
 private:

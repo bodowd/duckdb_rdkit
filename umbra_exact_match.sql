@@ -49,3 +49,14 @@ INNER JOIN compound_properties cp ON cp.molregno=m.molregno
 WHERE is_exact_match(m.rdkit_mol, 'CC(=O)Nc1nnc(S(N)(=O)=O)s1')
 GROUP BY m.rdkit_mol, a.relation;
 
+
+
+-- postgres
+SELECT a.standard_type, avg(a.value), count(a.value), a.relation, m.rdkit_mol FROM compound_structures m
+INNER JOIN activities a ON a.molregno=m.molregno
+INNER JOIN predicted_binding_domains pbd ON pbd.activity_id=a.activity_id
+INNER JOIN compound_properties cp ON cp.molregno=m.molregno
+WHERE m.rdkit_mol@>'CC(=O)Nc1nnc(S(N)(=O)=O)s1'
+GROUP BY m.rdkit_mol, a.relation, a.standard_type;
+
+
