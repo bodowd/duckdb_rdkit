@@ -55,8 +55,8 @@ void UmbraMolToVarchar(Vector &source, Vector &result, idx_t count) {
   UnaryExecutor::Execute<string_t, string_t>(
       source, result, count, [&](string_t b_umbra_mol) {
         auto umbra_mol = umbra_mol_t();
-        auto d_umbra_mol = deserialize_umbra_mol(b_umbra_mol.GetString());
-        auto rdkit_mol = rdkit_binary_mol_to_mol(d_umbra_mol.bmol);
+        auto bmol = deserialize_umbra_mol_bmol(b_umbra_mol.GetString());
+        auto rdkit_mol = rdkit_binary_mol_to_mol(bmol);
         auto smiles = rdkit_mol_to_smiles(*rdkit_mol);
         return StringVector::AddString(result, smiles);
       });

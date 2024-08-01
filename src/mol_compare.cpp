@@ -93,29 +93,13 @@ static void is_exact_match(DataChunk &args, ExpressionState &state,
       });
 }
 
-bool umbra_mol_cmp(umbra_mol_t m1, umbra_mol_t m2) {
-  // check the prefix
-  // if any of these values are not equal between the two molecules,
-  // there is no way the molecules are the same
-  if (m1.num_atoms != m2.num_atoms || m1.num_bonds != m2.num_bonds ||
-      m1.amw != m2.amw || m1.num_rings != m2.num_rings) {
-    return false;
-  }
-
+bool umbra_mol_cmp(std::string binary_mol_1, std::string binary_mol_2) {
   // otherwise, run a full check on the molecule objects
   std::unique_ptr<RDKit::ROMol> left_mol(new RDKit::ROMol());
   std::unique_ptr<RDKit::ROMol> right_mol(new RDKit::ROMol());
 
-  RDKit::MolPickler::molFromPickle(m1.bmol, *left_mol);
-  RDKit::MolPickler::molFromPickle(m2.bmol, *right_mol);
-
-  // experiment: log when the above check does not short circuit
-  {
-    std::ofstream log_file("log_file.txt",
-                           std::ios_base::out | std::ios_base::app);
-    log_file << "left_mol: " << rdkit_mol_to_smiles(*left_mol) << ","
-             << "right_mol: " << rdkit_mol_to_smiles(*right_mol) << std::endl;
-  }
+  RDKit::MolPickler::molFromPickle(binary_mol_1, *left_mol);
+  RDKit::MolPickler::molFromPickle(binary_mol_2, *right_mol);
   return mol_cmp(*left_mol, *right_mol);
 }
 
@@ -130,12 +114,25 @@ static void umbra_is_exact_match(DataChunk &args, ExpressionState &state,
   BinaryExecutor::Execute<string_t, string_t, bool>(
       left, right, result, args.size(),
       [&](string_t &left_umbra_blob, string_t &right_umbra_blob) {
-        auto left_umbra_mol =
-            deserialize_umbra_mol(left_umbra_blob.GetString());
-        auto right_umbra_mol =
-            deserialize_umbra_mol(right_umbra_blob.GetString());
+        auto left_umbra_header =
+            deserialize_umbra_mol_header(left_umbra_blob.GetString());
+        auto right_umbra_header =
+            deserialize_umbra_mol_header(right_umbra_blob.GetString());
+        // check the prefix
+        // if any of these values are not equal between the two molecules,
+        // there is no way the molecules are the same
+        if (std::memcmp(left_umbra_header.data(), right_umbra_header.data(),
+                        left_umbra_header.size()) != 0) {
 
-        auto compare_result = umbra_mol_cmp(left_umbra_mol, right_umbra_mol);
+          return false;
+        }
+
+        auto left_bmol =
+            deserialize_umbra_mol_bmol(left_umbra_blob.GetString());
+        auto right_bmol =
+            deserialize_umbra_mol_bmol(right_umbra_blob.GetString());
+
+        auto compare_result = umbra_mol_cmp(left_bmol, right_bmol);
         return compare_result;
       });
 }
@@ -170,94 +167,70 @@ static void is_substruct(DataChunk &args, ExpressionState &state,
 }
 
 // return if query is a substurcture of target
-bool _umbra_is_substruct(umbra_mol_t target, umbra_mol_t query) {
-  // std::ofstream log_file("umbra_substruct_log_file.txt",
-  //                        std::ios_base::out | std::ios_base::app);
-  for (auto i = 0; i < query.dalke_bitset.size(); i++) {
-    // if the fragment exists in the query but not in the target,
-    // there is no way for a match. This only works in one direction
-    //
-    // If the fragment exists in the target, but not the query, it is still
-    // possible there is something in the query that matches the target, but
-    // is not captured in the dalke fingerprint
-    //
-    // If all fragments that are on in the query are also on in the target,
-    // this does not mean that the query is a substructure. It is possible
-    // that there is something in the query not captured in the fingerprint
-    // that is present in the query, but not in the target. For example,
-    // if the query has NCCCCCCCC, and the target has the N bit set,
-    // but it could be that the target is only NC
-    //
-    // It is only possible to short-circuit in the false case, not in the
-    // true case
-    if (query.dalke_bitset[i] && !target.dalke_bitset[i]) {
-      // log_file << "short circuited" << std::endl;
-      return false;
-    }
-  }
+// bool _umbra_is_substruct(umbra_mol_t target, umbra_mol_t query) {
+//   // std::ofstream log_file("umbra_substruct_log_file.txt",
+//   //                        std::ios_base::out | std::ios_base::app);
+//   for (auto i = 0; i < query.dalke_bitset.size(); i++) {
+//     // if the fragment exists in the query but not in the target,
+//     // there is no way for a match. This only works in one direction
+//     //
+//     // If the fragment exists in the target, but not the query, it is still
+//     // possible there is something in the query that matches the target, but
+//     // is not captured in the dalke fingerprint
+//     //
+//     // If all fragments that are on in the query are also on in the target,
+//     // this does not mean that the query is a substructure. It is possible
+//     // that there is something in the query not captured in the fingerprint
+//     // that is present in the query, but not in the target. For example,
+//     // if the query has NCCCCCCCC, and the target has the N bit set,
+//     // but it could be that the target is only NC
+//     //
+//     // It is only possible to short-circuit in the false case, not in the
+//     // true case
+//     if (query.dalke_bitset[i] && !target.dalke_bitset[i]) {
+//       // log_file << "short circuited" << std::endl;
+//       return false;
+//     }
+//   }
+//
+//   // otherwise, run a substructure match on the molecule objects
+//   std::unique_ptr<RDKit::ROMol> left_mol(new RDKit::ROMol());
+//   std::unique_ptr<RDKit::ROMol> right_mol(new RDKit::ROMol());
+//
+//   RDKit::MolPickler::molFromPickle(target.bmol, *left_mol);
+//   RDKit::MolPickler::molFromPickle(query.bmol, *right_mol);
+//
+//   // copied from chemicalite
+//   RDKit::MatchVectType matchVect;
+//   bool recursion_possible = true;
+//   bool do_chiral_match = false; /* FIXME: make configurable getDoChiralSSS();
+//   */ return RDKit::SubstructMatch(*left_mol, *right_mol, matchVect,
+//                                recursion_possible, do_chiral_match);
+// }
 
-  // otherwise, run a substructure match on the molecule objects
-  std::unique_ptr<RDKit::ROMol> left_mol(new RDKit::ROMol());
-  std::unique_ptr<RDKit::ROMol> right_mol(new RDKit::ROMol());
-
-  RDKit::MolPickler::molFromPickle(target.bmol, *left_mol);
-  RDKit::MolPickler::molFromPickle(query.bmol, *right_mol);
-
-  // copied from chemicalite
-  RDKit::MatchVectType matchVect;
-  bool recursion_possible = true;
-  bool do_chiral_match = false; /* FIXME: make configurable getDoChiralSSS(); */
-  return RDKit::SubstructMatch(*left_mol, *right_mol, matchVect,
-                               recursion_possible, do_chiral_match);
-}
-
-static void umbra_is_substruct(DataChunk &args, ExpressionState &state,
-                               Vector &result) {
-  D_ASSERT(args.ColumnCount() == 2);
-  // args.data[i] is a FLAT_VECTOR
-  auto &left = args.data[0];
-  auto &right = args.data[1];
-  // std::cout << "UMBRA IS SUBSTRUCT CALLED!" << std::endl;
-
-  // cache binary molecules (which come from query smiles -- the
-  // right_umbra_blob) that have been seen so we do not need to regenerate the
-  // DalkeFP because that is costly
-  std::map<std::string, std::bitset<umbra_mol_t::DALKE_BIT_VECT_SIZE_BITS>>
-      seen;
-  // std::cout << "SEEN SIZE" << std::endl;
-  // std::cout << seen.size() << std::endl;
-  BinaryExecutor::Execute<string_t, string_t, bool>(
-      left, right, result, args.size(),
-      [&](string_t &left_umbra_blob, string_t &right_umbra_blob) {
-        auto left_umbra_mol =
-            deserialize_umbra_mol(left_umbra_blob.GetString());
-        auto right_umbra_mol =
-            deserialize_umbra_mol(right_umbra_blob.GetString());
-
-        auto it = seen.find(right_umbra_mol.bmol);
-
-        // we have seen this molecule already, just use the stored
-        // dalke fp
-        if (it != seen.end()) {
-          // std::cout << "CACHE HIT" << std::endl;
-          right_umbra_mol.dalke_bitset = it->second;
-          // std::cout << right_umbra_mol << std::endl;
-        } else {
-          // std::cout << "CACHE MISS" << std::endl;
-          // std::cout << "rightt umbra mol" << std::endl;
-          // std::cout << right_umbra_mol << std::endl;
-          right_umbra_mol.GenerateDalkeFP();
-          seen.insert(
-              std::pair(right_umbra_mol.bmol, right_umbra_mol.dalke_bitset));
-          // std::cout << right_umbra_mol << std::endl;
-        }
-        // std::cout << "SEEN SIZE" << std::endl;
-        // std::cout << seen.size() << std::endl;
-        auto compare_result =
-            _umbra_is_substruct(left_umbra_mol, right_umbra_mol);
-        return compare_result;
-      });
-}
+// static void umbra_is_substruct(DataChunk &args, ExpressionState &state,
+//                                Vector &result) {
+//   D_ASSERT(args.ColumnCount() == 2);
+//   // args.data[i] is a FLAT_VECTOR
+//   auto &left = args.data[0];
+//   auto &right = args.data[1];
+//
+//   BinaryExecutor::Execute<string_t, string_t, bool>(
+//       left, right, result, args.size(),
+//       [&](string_t &left_umbra_blob, string_t &right_umbra_blob) {
+//         // just deserialize the dalke fp first
+//         auto left_umbra_mol =
+//             deserialize_umbra_mol(left_umbra_blob.GetString());
+//         auto right_umbra_mol =
+//             deserialize_umbra_mol(right_umbra_blob.GetString());
+//
+//         // deserialize the binary mol when needed
+//
+//         auto compare_result =
+//             _umbra_is_substruct(left_umbra_mol, right_umbra_mol);
+//         return compare_result;
+//       });
+// }
 
 void RegisterCompareFunctions(DatabaseInstance &instance) {
   ScalarFunctionSet set("is_exact_match");
@@ -278,11 +251,11 @@ void RegisterCompareFunctions(DatabaseInstance &instance) {
                      LogicalType::BOOLEAN, is_substruct));
   ExtensionUtil::RegisterFunction(instance, set_is_substruct);
 
-  ScalarFunctionSet set_umbra_is_substruct("umbra_is_substruct");
-  set_umbra_is_substruct.AddFunction(
-      ScalarFunction({duckdb_rdkit::UmbraMol(), duckdb_rdkit::UmbraMol()},
-                     LogicalType::BOOLEAN, umbra_is_substruct));
-  ExtensionUtil::RegisterFunction(instance, set_umbra_is_substruct);
+  // ScalarFunctionSet set_umbra_is_substruct("umbra_is_substruct");
+  // set_umbra_is_substruct.AddFunction(
+  //     ScalarFunction({duckdb_rdkit::UmbraMol(), duckdb_rdkit::UmbraMol()},
+  //                    LogicalType::BOOLEAN, umbra_is_substruct));
+  // ExtensionUtil::RegisterFunction(instance, set_umbra_is_substruct);
 }
 
 } // namespace duckdb_rdkit
