@@ -1,6 +1,4 @@
 #include "common.hpp"
-#include "duckdb/common/enums/vector_type.hpp"
-#include "duckdb/common/types/value.hpp"
 #include "duckdb/common/types/vector.hpp"
 #include "duckdb/execution/expression_executor_state.hpp"
 #include "duckdb/function/scalar_function.hpp"
@@ -92,21 +90,14 @@ static void is_exact_match(DataChunk &args, ExpressionState &state,
       });
 }
 
-bool umbra_mol_cmp(umbra_mol_t m1, umbra_mol_t m2) {
-  // check the prefix
-  // if any of these values are not equal between the two molecules,
-  // there is no way the molecules are the same
-  if (m1.num_atoms != m2.num_atoms || m1.num_bonds != m2.num_bonds ||
-      m1.amw != m2.amw || m1.num_rings != m2.num_rings) {
-    return false;
-  }
+bool umbra_mol_cmp(std::string m1_bmol, std::string m2_bmol) {
 
   // otherwise, run a full check on the molecule objects
   std::unique_ptr<RDKit::ROMol> left_mol(new RDKit::ROMol());
   std::unique_ptr<RDKit::ROMol> right_mol(new RDKit::ROMol());
 
-  RDKit::MolPickler::molFromPickle(m1.bmol, *left_mol);
-  RDKit::MolPickler::molFromPickle(m2.bmol, *right_mol);
+  RDKit::MolPickler::molFromPickle(m1_bmol, *left_mol);
+  RDKit::MolPickler::molFromPickle(m2_bmol, *right_mol);
 
   // experiment: log when the above check does not short circuit
   {
@@ -128,12 +119,32 @@ static void umbra_is_exact_match(DataChunk &args, ExpressionState &state,
   BinaryExecutor::Execute<string_t, string_t, bool>(
       left, right, result, args.size(),
       [&](string_t &left_umbra_blob, string_t &right_umbra_blob) {
-        auto left_umbra_mol =
-            deserialize_umbra_mol(left_umbra_blob.GetString());
-        auto right_umbra_mol =
-            deserialize_umbra_mol(right_umbra_blob.GetString());
+        auto left_umbra_prefix = extract_prefix_from_umbra_mol(left_umbra_blob);
+        auto right_umbra_prefix =
+            extract_prefix_from_umbra_mol(right_umbra_blob);
+        // check the prefix
+        // if any of these values are not equal between the two molecules,
+        // there is no way the molecules are the same
+        std::cout << "prefixes in exact_match" << std::endl;
+        std::bitset<32> p(left_umbra_prefix);
+        std::cout << p << '\n';
+        std::bitset<32> x(right_umbra_prefix);
+        std::cout << x << '\n';
 
-        auto compare_result = umbra_mol_cmp(left_umbra_mol, right_umbra_mol);
+        auto k = std::memcmp(left_umbra_blob.GetPrefix(),
+                             right_umbra_blob.GetPrefix(),
+                             string_t::PREFIX_BYTES) != 0;
+        std::cout << "after memcmp" << std::endl;
+        std::cout << k << std::endl;
+        if (left_umbra_prefix != right_umbra_prefix) {
+          std::cout << "BAILOUT" << std::endl;
+          return false;
+        }
+
+        std::string left_bmol = extract_bmol_from_umbra_mol(left_umbra_blob);
+        std::string right_bmol = extract_bmol_from_umbra_mol(right_umbra_blob);
+
+        auto compare_result = umbra_mol_cmp(left_bmol, right_bmol);
         return compare_result;
       });
 }

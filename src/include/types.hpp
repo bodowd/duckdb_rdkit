@@ -13,65 +13,63 @@ void RegisterTypes(DatabaseInstance &instance);
 struct umbra_mol_t {
 
 public:
-  static constexpr idx_t NUM_ATOMS_BYTES = 1;
-  static constexpr idx_t NUM_BONDS_BYTES = 1;
-  static constexpr idx_t AMW_BYTES = 2;
-  static constexpr idx_t NUM_RINGS_BYTES = 1;
-  static constexpr idx_t BMOL_SIZE_BYTES = 2;
-  static constexpr idx_t HEADER_SIZE = NUM_ATOMS_BYTES + NUM_BONDS_BYTES +
-                                       AMW_BYTES + NUM_RINGS_BYTES +
-                                       BMOL_SIZE_BYTES;
-  static constexpr idx_t UINT16_MAX_SIZE = NumericLimits<uint16_t>::Maximum();
-  static constexpr idx_t UINT8_MAX_SIZE = NumericLimits<uint8_t>::Maximum();
-
-  // Experimented with 1 byte values 7 byte header
-  // 2 bytes also works fine to give 10 byte header
-  uint8_t num_atoms;
-  uint8_t num_bonds;
-  uint16_t amw;
-  uint8_t num_rings;
-  uint16_t bmol_size;
+  uint32_t prefix;
   std::string bmol;
 
-  // default constructor for deserialization
-  umbra_mol_t() = default;
-
-  umbra_mol_t(uint8_t num_atoms, uint8_t num_bonds, uint16_t amw,
-              uint8_t num_rings, const std::string &binary_mol)
-      : num_atoms(num_atoms), num_bonds(num_bonds), amw(amw),
-        num_rings(num_rings), bmol_size(binary_mol.size()), bmol(binary_mol) {
-
-    if (num_atoms > UINT8_MAX_SIZE) {
-      num_atoms = UINT8_MAX_SIZE;
+  umbra_mol_t(uint num_atoms, uint num_bonds, uint amw, uint num_rings,
+              const std::string &binary_mol)
+      : bmol(binary_mol) {
+    std::cout << "CONSTRUCTOR FOR umbra_mol_t" << std::endl;
+    std::cout << "NUM_ATOMS IN INPUT: " << num_atoms << std::endl;
+    // cap the count if it is larger than the number of bits it supports
+    // number of bits for each count supports the 99 percentile of
+    // values in chembl
+    if (num_atoms > 128) {
+      num_atoms = 128;
     }
 
-    if (num_bonds > UINT8_MAX_SIZE) {
-      num_bonds = UINT8_MAX_SIZE;
+    if (num_bonds > 64) {
+      num_bonds = 64;
     }
 
-    if (amw > UINT16_MAX_SIZE) {
-      amw = UINT16_MAX_SIZE;
+    if (amw > 2048) {
+      amw = 2048;
     }
 
-    if (num_rings > UINT8_MAX_SIZE) {
-      num_rings = UINT8_MAX_SIZE;
+    if (num_rings > 8) {
+      num_rings = 8;
     }
 
-    if (bmol_size > UINT16_MAX_SIZE) {
-      throw OutOfRangeException(
-          "Cannot support a molecule of this size."
-          "this molecule object is larger than the max supported size: '%d'",
-          UINT16_MAX_SIZE);
-    }
+    // 0x7F is 0111 1111 which sets the first 7 bits of a number
+    // (num_atoms & 0x7F) creates a mask, keeping only the first 7 bits
+    // and higher order bits are zeroed out
+    // Shift 20 to the left in order to shift to the 20th bit
+    // The end of the number will be at 27th bit
+    prefix |= (num_atoms & 0x7F) << 20;
+    // 0x3F is 0011 1111 to set the first 6 bits
+    // apply mask to keep only the first 6 bits
+    // shift 14 bits to the left to put it at the 14th bit
+    prefix |= (num_bonds & 0x3F) << 14;
+    prefix |= (num_rings & 0x07) << 11;
+    // 11 bits for amw, doesn't need to shift
+    prefix |= (amw & 0x7FF);
+
+    std::bitset<32> p(prefix);
+    std::cout << "prefix: " << p << '\n' << std::endl;
   }
 
   friend std::ostream &operator<<(std::ostream &out,
                                   const umbra_mol_t &umbra_mol) {
-    out << "num_atoms: " << umbra_mol.num_atoms << '\n';
-    out << "num_bonds: " << umbra_mol.num_bonds << '\n';
-    out << "amw: " << umbra_mol.amw << '\n';
-    out << "num_rings: " << umbra_mol.num_rings << '\n';
-    out << "bmol_size: " << umbra_mol.bmol_size << '\n';
+    // 0x07F is 0111 1111
+    // the number & 0x07F will get all lower 7 bits that are set
+    auto num_atoms = (umbra_mol.prefix >> 20) & 0x7F;
+    auto num_bonds = (umbra_mol.prefix >> 14) & 0x3F;
+    auto num_rings = (umbra_mol.prefix >> 11) & 0x07;
+    auto amw = umbra_mol.prefix & 0x7FF;
+    out << "num_atoms: " << num_atoms << '\n';
+    out << "num_bonds: " << num_bonds << '\n';
+    out << "num_rings: " << num_rings << '\n';
+    out << "amw: " << amw << '\n';
     out << "bmol: " << '\n';
     for (char byte : umbra_mol.bmol) {
       printf("%02x ", static_cast<unsigned char>(byte));

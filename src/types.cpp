@@ -2,6 +2,8 @@
 
 #include "types.hpp"
 #include "common.hpp"
+#include "duckdb/common/constants.hpp"
+#include "duckdb/common/types.hpp"
 #include "duckdb/main/database.hpp"
 #include "duckdb/main/extension_util.hpp"
 
@@ -18,9 +20,9 @@ LogicalType Mol() {
 }
 
 LogicalType UmbraMol() {
-  auto blob_type = LogicalType(LogicalTypeId::BLOB);
-  blob_type.SetAlias("UmbraMol");
-  return blob_type;
+  auto type = LogicalType(LogicalTypeId::BLOB);
+  type.SetAlias("UmbraMol");
+  return type;
 }
 
 void RegisterTypes(DatabaseInstance &instance) {
