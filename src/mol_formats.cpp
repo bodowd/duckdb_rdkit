@@ -130,21 +130,26 @@ void umbra_mol_from_smiles(DataChunk &args, ExpressionState &state,
   UnaryExecutor::ExecuteWithNulls<string_t, string_t>(
       smiles, result, count,
       [&](string_t smiles, ValidityMask &mask, idx_t idx) {
-        auto mol = rdkit_mol_from_smiles(smiles.GetString());
-        auto pickled_mol = rdkit_mol_to_binary_mol(*mol);
+        try {
+          auto mol = rdkit_mol_from_smiles(smiles.GetString());
+          auto pickled_mol = rdkit_mol_to_binary_mol(*mol);
 
-        // add the meta data to the front of pickled mol and store the
-        // buffer
-        auto num_atoms = mol->getNumAtoms();
-        auto num_bonds = mol->getNumBonds();
-        auto amw = RDKit::Descriptors::calcAMW(*mol);
-        auto num_rings = mol->getRingInfo()->numRings();
-        auto umbra_mol =
-            umbra_mol_t(num_atoms, num_bonds, amw, num_rings, pickled_mol);
-        auto b_umbra_mol = serialize_umbra_mol(umbra_mol);
-        auto um = string_t(b_umbra_mol);
+          // add the meta data to the front of pickled mol and store the
+          // buffer
+          auto num_atoms = mol->getNumAtoms();
+          auto num_bonds = mol->getNumBonds();
+          auto amw = RDKit::Descriptors::calcAMW(*mol);
+          auto num_rings = mol->getRingInfo()->numRings();
+          auto umbra_mol =
+              umbra_mol_t(num_atoms, num_bonds, amw, num_rings, pickled_mol);
+          auto b_umbra_mol = serialize_umbra_mol(umbra_mol);
+          auto um = string_t(b_umbra_mol);
 
-        return StringVector::AddString(result, um);
+          return StringVector::AddString(result, um);
+        } catch (...) {
+          mask.SetInvalid(idx);
+          return string_t();
+        }
       });
 }
 

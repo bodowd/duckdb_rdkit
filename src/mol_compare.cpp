@@ -100,12 +100,13 @@ bool umbra_mol_cmp(std::string m1_bmol, std::string m2_bmol) {
   RDKit::MolPickler::molFromPickle(m2_bmol, *right_mol);
 
   // experiment: log when the above check does not short circuit
-  {
-    std::ofstream log_file("log_file.txt",
-                           std::ios_base::out | std::ios_base::app);
-    log_file << "left_mol: " << rdkit_mol_to_smiles(*left_mol) << ","
-             << "right_mol: " << rdkit_mol_to_smiles(*right_mol) << std::endl;
-  }
+  // {
+  //   std::ofstream log_file("log_file.txt",
+  //                          std::ios_base::out | std::ios_base::app);
+  //   log_file << "left_mol: " << rdkit_mol_to_smiles(*left_mol) << ","
+  //            << "right_mol: " << rdkit_mol_to_smiles(*right_mol) <<
+  //            std::endl;
+  // }
   return mol_cmp(*left_mol, *right_mol);
 }
 
@@ -125,19 +126,15 @@ static void umbra_is_exact_match(DataChunk &args, ExpressionState &state,
         // check the prefix
         // if any of these values are not equal between the two molecules,
         // there is no way the molecules are the same
-        std::cout << "prefixes in exact_match" << std::endl;
-        std::bitset<32> p(left_umbra_prefix);
-        std::cout << p << '\n';
-        std::bitset<32> x(right_umbra_prefix);
-        std::cout << x << '\n';
 
-        auto k = std::memcmp(left_umbra_blob.GetPrefix(),
-                             right_umbra_blob.GetPrefix(),
-                             string_t::PREFIX_BYTES) != 0;
-        std::cout << "after memcmp" << std::endl;
-        std::cout << k << std::endl;
+        // if (std::memcmp(left_umbra_blob.GetPrefix(),
+        //                 right_umbra_blob.GetPrefix(),
+        //                 string_t::PREFIX_BYTES) != 0) {
+        //   return false;
+        // }
+
+        // did not see difference in speed with memcmp
         if (left_umbra_prefix != right_umbra_prefix) {
-          std::cout << "BAILOUT" << std::endl;
           return false;
         }
 

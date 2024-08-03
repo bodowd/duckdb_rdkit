@@ -2,9 +2,9 @@
 .open chembl_33.duckdb
 
 
-select molregno,canonical_smiles, mol, umbra_mol from molecule where umbra_is_exact_match(umbra_mol,'Cc1cn([C@H]2C[C@H](N=[N+]=[N-])[C@@H](CO)O2)c(=O)[nH]c1=O');
+select molregno,canonical_smiles, rdkit_mol, umbra_mol from molecule where umbra_is_exact_match(umbra_mol,'Cc1cn([C@H]2C[C@H](N=[N+]=[N-])[C@@H](CO)O2)c(=O)[nH]c1=O');
 
-select molregno,canonical_smiles, mol, umbra_mol from molecule where umbra_is_exact_match(umbra_mol,'CCC');
+select molregno,canonical_smiles, rdkit_mol, umbra_mol from molecule where umbra_is_exact_match(umbra_mol,'CCC');
 
 SELECT pbd.prediction_method, a.value, a.relation, m.umbra_mol FROM molecule m
   INNER JOIN activities a ON a.molregno=m.molregno
