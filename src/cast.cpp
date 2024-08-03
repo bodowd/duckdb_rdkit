@@ -55,16 +55,11 @@ bool MolToVarcharCast(Vector &source, Vector &result, idx_t count,
 void UmbraMolToVarchar(Vector &source, Vector &result, idx_t count) {
   UnaryExecutor::Execute<string_t, string_t>(
       source, result, count, [&](string_t b_umbra_mol) {
-        std::cout << "UmbraMolToVarchar" << std::endl;
         // extract just the bmol from the umbra_mol, then convert it
         // to a SMILES so that that can be rendered by duckdb
         // don't want to render the binary data, and also VARCHAR doesn't
         // expect binary data. Thinks it's invalid
         auto bmol = extract_bmol_from_umbra_mol(b_umbra_mol);
-        std::cout << "\nbmol: " << std::endl;
-        for (char b : bmol) {
-          printf("%02x ", static_cast<unsigned char>(b));
-        }
         auto rdkit_mol = rdkit_binary_mol_to_mol(bmol);
         auto smiles = rdkit_mol_to_smiles(*rdkit_mol);
         return StringVector::AddString(result, smiles);
@@ -81,8 +76,6 @@ void VarcharToUmbraMol(Vector &source, Vector &result, idx_t count) {
   UnaryExecutor::Execute<string_t, string_t>(
       source, result, count, [&](string_t smiles) {
         // this varchar is just a regular string, not a umbramol
-        std::cout << smiles.GetString() << std::endl;
-        std::cout << "VarcharToUmbraMol" << std::endl;
         auto mol = rdkit_mol_from_smiles(smiles.GetString());
         // add the meta data to the front of pickled mol and store the buffer
         auto num_atoms = mol->getNumAtoms();
@@ -93,7 +86,6 @@ void VarcharToUmbraMol(Vector &source, Vector &result, idx_t count) {
         auto pickled_mol = rdkit_mol_to_binary_mol(*mol);
         auto umbra_mol =
             umbra_mol_t(num_atoms, num_bonds, amw, num_rings, pickled_mol);
-        std::cout << umbra_mol << std::endl;
         auto serialized = serialize_umbra_mol(umbra_mol);
 
         return StringVector::AddString(result, serialized);

@@ -78,18 +78,11 @@ std::string extract_bmol_from_umbra_mol(string_t buffer) {
   bmol.resize(bmol_size);
   std::memcpy(&bmol[0], &buffer.GetString()[prefix_size], bmol_size);
 
-  std::cout << "extract_bmol_from_umbra_mol: " << std::endl;
-  for (char b : bmol) {
-    printf("%02x ", static_cast<unsigned char>(b));
-  }
-
   return bmol;
 }
 
 uint32_t extract_prefix_from_umbra_mol(string_t buffer) {
   uint32_t prefix = Load<uint32_t>(const_data_ptr_cast(buffer.GetPrefix()));
-  std::bitset<32> p(prefix);
-  std::cout << p << '\n';
   return prefix;
 }
 
@@ -146,20 +139,10 @@ void umbra_mol_from_smiles(DataChunk &args, ExpressionState &state,
         auto num_bonds = mol->getNumBonds();
         auto amw = RDKit::Descriptors::calcAMW(*mol);
         auto num_rings = mol->getRingInfo()->numRings();
-        std::cout << "First constructor call: " << std::endl;
         auto umbra_mol =
             umbra_mol_t(num_atoms, num_bonds, amw, num_rings, pickled_mol);
-        std::cout << umbra_mol << std::endl;
         auto b_umbra_mol = serialize_umbra_mol(umbra_mol);
-        std::cout << "b_umbra_mol: " << std::endl;
-        for (auto i : b_umbra_mol) {
-          printf("%02x ", static_cast<unsigned char>(i));
-        }
         auto um = string_t(b_umbra_mol);
-        std::cout << "\num.GetString()" << std::endl;
-        for (char b : um.GetString()) {
-          printf("%02x ", static_cast<unsigned char>(b));
-        }
 
         return StringVector::AddString(result, um);
       });
