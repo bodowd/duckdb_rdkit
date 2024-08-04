@@ -5,6 +5,7 @@
 #include "duckdb/main/extension_util.hpp"
 #include "mol_formats.hpp"
 #include "types.hpp"
+#include "umbra_mol.hpp"
 #include <GraphMol/Descriptors/MolDescriptors.h>
 #include <GraphMol/GraphMol.h>
 #include <GraphMol/MolPickler.h>
@@ -90,15 +91,26 @@ static void is_exact_match(DataChunk &args, ExpressionState &state,
       });
 }
 
+// bool umbra_mol_cmp(std::string m1_bmol, std::string m2_bmol) {
+//
+//   // otherwise, run a full check on the molecule objects
+//   std::unique_ptr<RDKit::ROMol> left_mol(new RDKit::ROMol());
+//   std::unique_ptr<RDKit::ROMol> right_mol(new RDKit::ROMol());
+//
+//   RDKit::MolPickler::molFromPickle(m1_bmol, *left_mol);
+//   RDKit::MolPickler::molFromPickle(m2_bmol, *right_mol);
+//
+//   // experiment: log when the above check does not short circuit
+//   // {
+//   //   std::ofstream log_file("log_file.txt",
+//   //                          std::ios_base::out | std::ios_base::app);
+//   //   log_file << "left_mol: " << rdkit_mol_to_smiles(*left_mol) << ","
+//   //            << "right_mol: " << rdkit_mol_to_smiles(*right_mol) <<
+//   //            std::endl;
+//   // }
+//   return mol_cmp(*left_mol, *right_mol);
+// }
 bool umbra_mol_cmp(std::string m1_bmol, std::string m2_bmol) {
-
-  // otherwise, run a full check on the molecule objects
-  std::unique_ptr<RDKit::ROMol> left_mol(new RDKit::ROMol());
-  std::unique_ptr<RDKit::ROMol> right_mol(new RDKit::ROMol());
-
-  RDKit::MolPickler::molFromPickle(m1_bmol, *left_mol);
-  RDKit::MolPickler::molFromPickle(m2_bmol, *right_mol);
-
   // experiment: log when the above check does not short circuit
   // {
   //   std::ofstream log_file("log_file.txt",
@@ -107,7 +119,37 @@ bool umbra_mol_cmp(std::string m1_bmol, std::string m2_bmol) {
   //            << "right_mol: " << rdkit_mol_to_smiles(*right_mol) <<
   //            std::endl;
   // }
-  return mol_cmp(*left_mol, *right_mol);
+
+  // otherwise, run a full check on the molecule objects
+  std::unique_ptr<RDKit::ROMol> m1(new RDKit::ROMol());
+  std::unique_ptr<RDKit::ROMol> m2(new RDKit::ROMol());
+
+  RDKit::MolPickler::molFromPickle(m1_bmol, *m1);
+  RDKit::MolPickler::molFromPickle(m2_bmol, *m2);
+
+  // credit: code is from chemicalite
+  // https://github.com/rvianello/chemicalite
+  // See mol_search.test for an example of
+  // a molecule which can return false negative, if the SMILES is different
+  // from the query if m1 is substruct of m2 and m2 is substruct of m1,
+  // likely to be the same molecule
+  RDKit::MatchVectType matchVect;
+  bool recursion_possible = false;
+  bool do_chiral_match = false; /* FIXME: make configurable getDoChiralSSS(); */
+  bool ss1 = RDKit::SubstructMatch(*m1, *m2, matchVect, recursion_possible,
+                                   do_chiral_match);
+  bool ss2 = RDKit::SubstructMatch(*m2, *m1, matchVect, recursion_possible,
+                                   do_chiral_match);
+  if (ss1 && !ss2) {
+    return false;
+  } else if (!ss1 && ss2) {
+    return false;
+  }
+
+  // the above can still fail in some chirality cases
+  std::string smi1 = RDKit::MolToSmiles(*m1, do_chiral_match);
+  std::string smi2 = RDKit::MolToSmiles(*m2, do_chiral_match);
+  return smi1 == smi2;
 }
 
 static void umbra_is_exact_match(DataChunk &args, ExpressionState &state,
@@ -120,29 +162,50 @@ static void umbra_is_exact_match(DataChunk &args, ExpressionState &state,
   BinaryExecutor::Execute<string_t, string_t, bool>(
       left, right, result, args.size(),
       [&](string_t &left_umbra_blob, string_t &right_umbra_blob) {
-        auto left_umbra_prefix = extract_prefix_from_umbra_mol(left_umbra_blob);
-        auto right_umbra_prefix =
-            extract_prefix_from_umbra_mol(right_umbra_blob);
-        // check the prefix
-        // if any of these values are not equal between the two molecules,
-        // there is no way the molecules are the same
+        auto left = umbra_mol_t(left_umbra_blob.GetString());
+        auto right = umbra_mol_t(right_umbra_blob.GetString());
 
-        // if (std::memcmp(left_umbra_blob.GetPrefix(),
-        //                 right_umbra_blob.GetPrefix(),
-        //                 string_t::PREFIX_BYTES) != 0) {
-        //   return false;
-        // }
+        for (auto b : left.GetString()) {
+          printf("%02x ", static_cast<unsigned char>(b));
+        }
 
-        // did not see difference in speed with memcmp
-        if (left_umbra_prefix != right_umbra_prefix) {
+        // first 27 bits of the prefix are the counts
+        // That fits into a uint32_t
+        // First copy the first 4 bytes of the prefix
+        // Then get the 27 bits of the prefix
+        uint32_t a_prefix_32_bits;
+        memcpy(&a_prefix_32_bits, left_umbra_blob.GetPrefix(),
+               umbra_mol_t::COUNT_PREFIX_BYTES);
+
+        uint32_t b_prefix_32_bits;
+        memcpy(&b_prefix_32_bits, right_umbra_blob.GetPrefix(),
+               umbra_mol_t::COUNT_PREFIX_BYTES);
+
+        // shift to the right to get the highest 27 bits
+        // The counts prefix are packed all the way to the highest
+        // bit, number 31 (counting from 0), so the lowest 5 bits are not
+        // part of the count prefix
+        uint32_t a_count_prefix = a_prefix_32_bits >> 5;
+        uint32_t b_count_prefix = b_prefix_32_bits >> 5;
+
+        // auto a_prefix = Load<uint32_t>(const_data_ptr_cast(a.GetPrefix()));
+        // uint16_t b_prefix =
+        // Load<uint32_t>(const_data_ptr_cast(b.GetPrefix()));
+
+        if (a_count_prefix != b_count_prefix) {
           return false;
         }
 
-        std::string left_bmol = extract_bmol_from_umbra_mol(left_umbra_blob);
-        std::string right_bmol = extract_bmol_from_umbra_mol(right_umbra_blob);
+        // otherwise, do the more extensive check with rdkit
 
-        auto compare_result = umbra_mol_cmp(left_bmol, right_bmol);
-        return compare_result;
+        std::string a_bmol;
+        std::string b_bmol;
+        memcpy(&a_bmol[0], left.GetBinaryMol(), left.GetBmolSize());
+        memcpy(&b_bmol[0], right.GetBinaryMol(), right.GetBmolSize());
+
+        return umbra_mol_cmp(a_bmol, b_bmol);
+
+        return true;
       });
 }
 

@@ -6,6 +6,7 @@
 #include "duckdb/main/extension_util.hpp"
 #include "mol_formats.hpp"
 #include "types.hpp"
+#include "umbra_mol.hpp"
 #include <GraphMol/Descriptors/MolDescriptors.h>
 #include <GraphMol/FileParsers/FileParsers.h>
 #include <GraphMol/GraphMol.h>
@@ -14,8 +15,6 @@
 #include <GraphMol/SmilesParse/SmilesParse.h>
 #include <GraphMol/SmilesParse/SmilesWrite.h>
 #include <duckdb/parser/parsed_data/create_scalar_function_info.hpp>
-#include <iostream>
-#include <system_error>
 
 namespace duckdb_rdkit {
 
@@ -55,12 +54,8 @@ bool MolToVarcharCast(Vector &source, Vector &result, idx_t count,
 void UmbraMolToVarchar(Vector &source, Vector &result, idx_t count) {
   UnaryExecutor::Execute<string_t, string_t>(
       source, result, count, [&](string_t b_umbra_mol) {
-        // extract just the bmol from the umbra_mol, then convert it
-        // to a SMILES so that that can be rendered by duckdb
-        // don't want to render the binary data, and also VARCHAR doesn't
-        // expect binary data. Thinks it's invalid
-        auto bmol = extract_bmol_from_umbra_mol(b_umbra_mol);
-        auto rdkit_mol = rdkit_binary_mol_to_mol(bmol);
+        auto bmol = umbra_mol_t(b_umbra_mol.GetString());
+        auto rdkit_mol = rdkit_binary_mol_to_mol(bmol.GetBinaryMol());
         auto smiles = rdkit_mol_to_smiles(*rdkit_mol);
         return StringVector::AddString(result, smiles);
       });
@@ -84,11 +79,10 @@ void VarcharToUmbraMol(Vector &source, Vector &result, idx_t count) {
         auto num_rings = mol->getRingInfo()->numRings();
 
         auto pickled_mol = rdkit_mol_to_binary_mol(*mol);
-        auto umbra_mol =
+        auto um =
             umbra_mol_t(num_atoms, num_bonds, amw, num_rings, pickled_mol);
-        auto serialized = serialize_umbra_mol(umbra_mol);
 
-        return StringVector::AddString(result, serialized);
+        return StringVector::AddString(result, um.GetString());
       });
 }
 

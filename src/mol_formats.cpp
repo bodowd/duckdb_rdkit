@@ -4,6 +4,7 @@
 #include "duckdb/common/types.hpp"
 #include "duckdb/function/function_set.hpp"
 #include "types.hpp"
+#include "umbra_mol.hpp"
 #include <GraphMol/Descriptors/MolDescriptors.h>
 #include <GraphMol/FileParsers/FileParsers.h>
 #include <GraphMol/GraphMol.h>
@@ -49,42 +50,43 @@ std::string rdkit_mol_to_binary_mol(const RDKit::ROMol mol) {
   return buf;
 }
 
-std::string serialize_umbra_mol(umbra_mol_t umbra_mol) {
-  // encode a prefix and the binary mol into a single std::string
-  // this can then be handed to the string_t constructor, and then the
-  // constructor will take care of putting the prefix and the binary molecule
-  // into the prefix and ptr fields in the `pointer` struct of string_t
-  std::vector<char> buffer;
+// std::string serialize_umbra_mol(umbra_mol_t umbra_mol) {
+//   // encode a prefix and the binary mol into a single std::string
+//   // this can then be handed to the string_t constructor, and then the
+//   // constructor will take care of putting the prefix and the binary molecule
+//   // into the prefix and ptr fields in the `pointer` struct of string_t
+//   std::vector<char> buffer;
+//
+//   buffer.insert(buffer.end(), reinterpret_cast<const char
+//   *>(&umbra_mol.prefix),
+//                 reinterpret_cast<const char *>(&umbra_mol.prefix) +
+//                     sizeof(umbra_mol.prefix));
+//   buffer.insert(buffer.end(), umbra_mol.bmol.begin(), umbra_mol.bmol.end());
+//
+//   return std::string(buffer.begin(), buffer.end());
+// }
 
-  buffer.insert(buffer.end(), reinterpret_cast<const char *>(&umbra_mol.prefix),
-                reinterpret_cast<const char *>(&umbra_mol.prefix) +
-                    sizeof(umbra_mol.prefix));
-  buffer.insert(buffer.end(), umbra_mol.bmol.begin(), umbra_mol.bmol.end());
+// std::string extract_bmol_from_umbra_mol(string_t buffer) {
+//   std::string bmol;
+//
+//   // string_t::GetString() will get the data from the ptr to the string and
+//   // convert it to std::string
+//   auto prefix_size = string_t::PREFIX_BYTES;
+//   // string_t::GetString() will return the prefix and the bmol
+//   // extract just the bmol which is after 4 bytes of prefix
+//   // the total size of the string = prefix + bmol
+//   // so bmol_size = total size - prefix size
+//   auto bmol_size = buffer.GetSize() - string_t::PREFIX_BYTES;
+//   bmol.resize(bmol_size);
+//   std::memcpy(&bmol[0], &buffer.GetString()[prefix_size], bmol_size);
+//
+//   return bmol;
+// }
 
-  return std::string(buffer.begin(), buffer.end());
-}
-
-std::string extract_bmol_from_umbra_mol(string_t buffer) {
-  std::string bmol;
-
-  // string_t::GetString() will get the data from the ptr to the string and
-  // convert it to std::string
-  auto prefix_size = string_t::PREFIX_BYTES;
-  // string_t::GetString() will return the prefix and the bmol
-  // extract just the bmol which is after 4 bytes of prefix
-  // the total size of the string = prefix + bmol
-  // so bmol_size = total size - prefix size
-  auto bmol_size = buffer.GetSize() - string_t::PREFIX_BYTES;
-  bmol.resize(bmol_size);
-  std::memcpy(&bmol[0], &buffer.GetString()[prefix_size], bmol_size);
-
-  return bmol;
-}
-
-uint32_t extract_prefix_from_umbra_mol(string_t buffer) {
-  uint32_t prefix = Load<uint32_t>(const_data_ptr_cast(buffer.GetPrefix()));
-  return prefix;
-}
+// uint32_t extract_prefix_from_umbra_mol(string_t buffer) {
+//   uint32_t prefix = Load<uint32_t>(const_data_ptr_cast(buffer.GetPrefix()));
+//   return prefix;
+// }
 
 // Deserialize a binary mol to RDKit mol
 std::unique_ptr<RDKit::ROMol> rdkit_binary_mol_to_mol(std::string bmol) {
@@ -140,12 +142,13 @@ void umbra_mol_from_smiles(DataChunk &args, ExpressionState &state,
           auto num_bonds = mol->getNumBonds();
           auto amw = RDKit::Descriptors::calcAMW(*mol);
           auto num_rings = mol->getRingInfo()->numRings();
-          auto umbra_mol =
+          auto um =
               umbra_mol_t(num_atoms, num_bonds, amw, num_rings, pickled_mol);
-          auto b_umbra_mol = serialize_umbra_mol(umbra_mol);
-          auto um = string_t(b_umbra_mol);
-
-          return StringVector::AddString(result, um);
+          std::cout << "after constructor: " << std::endl;
+          for (char b : um.GetString()) {
+            printf("%02x ", static_cast<unsigned char>(b));
+          }
+          return StringVector::AddString(result, um.GetString());
         } catch (...) {
           mask.SetInvalid(idx);
           return string_t();
