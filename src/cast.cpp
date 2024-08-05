@@ -54,8 +54,18 @@ bool MolToVarcharCast(Vector &source, Vector &result, idx_t count,
 void UmbraMolToVarchar(Vector &source, Vector &result, idx_t count) {
   UnaryExecutor::Execute<string_t, string_t>(
       source, result, count, [&](string_t b_umbra_mol) {
-        auto bmol = umbra_mol_t(b_umbra_mol.GetString());
-        auto rdkit_mol = rdkit_binary_mol_to_mol(bmol.GetBinaryMol());
+        std::cout << "\nUmbraMolToVarchar" << std::endl;
+        for (char b : b_umbra_mol.GetString()) {
+          printf("%02x ", static_cast<unsigned char>(b));
+        }
+
+        auto umbra_mol = umbra_mol_t(b_umbra_mol);
+        auto bmol = umbra_mol.GetBinaryMol();
+        // for (char b : bmol) {
+        //   printf("%02x ", static_cast<unsigned char>(b));
+        // }
+
+        auto rdkit_mol = rdkit_binary_mol_to_mol(bmol);
         auto smiles = rdkit_mol_to_smiles(*rdkit_mol);
         return StringVector::AddString(result, smiles);
       });
@@ -79,10 +89,10 @@ void VarcharToUmbraMol(Vector &source, Vector &result, idx_t count) {
         auto num_rings = mol->getRingInfo()->numRings();
 
         auto pickled_mol = rdkit_mol_to_binary_mol(*mol);
-        auto um =
-            umbra_mol_t(num_atoms, num_bonds, amw, num_rings, pickled_mol);
+        auto umbra_mol = string_t(
+            count_prefix(num_atoms, num_bonds, amw, num_rings, pickled_mol));
 
-        return StringVector::AddString(result, um.GetString());
+        return StringVector::AddString(result, umbra_mol);
       });
 }
 

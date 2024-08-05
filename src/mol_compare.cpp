@@ -198,12 +198,12 @@ static void umbra_is_exact_match(DataChunk &args, ExpressionState &state,
 
         // otherwise, do the more extensive check with rdkit
 
-        std::string a_bmol;
-        std::string b_bmol;
-        memcpy(&a_bmol[0], left.GetBinaryMol(), left.GetBmolSize());
-        memcpy(&b_bmol[0], right.GetBinaryMol(), right.GetBmolSize());
-
-        return umbra_mol_cmp(a_bmol, b_bmol);
+        // std::string a_bmol;
+        // std::string b_bmol;
+        // memcpy(&a_bmol[0], left.GetBinaryMol(), left.GetBina());
+        // memcpy(&b_bmol[0], right.GetBinaryMol(), right.GetBmolSize());
+        //
+        // return umbra_mol_cmp(a_bmol, b_bmol);
 
         return true;
       });

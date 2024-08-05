@@ -142,13 +142,16 @@ void umbra_mol_from_smiles(DataChunk &args, ExpressionState &state,
           auto num_bonds = mol->getNumBonds();
           auto amw = RDKit::Descriptors::calcAMW(*mol);
           auto num_rings = mol->getRingInfo()->numRings();
-          auto um =
-              umbra_mol_t(num_atoms, num_bonds, amw, num_rings, pickled_mol);
-          std::cout << "after constructor: " << std::endl;
-          for (char b : um.GetString()) {
+          auto res =
+              count_prefix(num_atoms, num_bonds, amw, num_rings, pickled_mol);
+          std::cout << "res size: " << res.size() << std::endl;
+          for (char b : res) {
             printf("%02x ", static_cast<unsigned char>(b));
           }
-          return StringVector::AddString(result, um.GetString());
+
+          // IMPORTANT! StringVector::AddString needs to take a std::string
+          // Using string_t::GetString() mangles up the data
+          return StringVector::AddStringOrBlob(result, res);
         } catch (...) {
           mask.SetInvalid(idx);
           return string_t();
