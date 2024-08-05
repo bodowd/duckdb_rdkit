@@ -53,7 +53,7 @@ struct umbra_mol_t {
     // value.ptr =
     //     std::shared_ptr<const char[]>(buffer.GetPointer(), [](const char *)
     //     {});
-    value.ptr = buffer.GetPointer();
+    value.ptr = buffer.GetData();
     for (auto i = 0; i < buffer.GetSize(); i++) {
       printf("%02x ", static_cast<unsigned char>(value.ptr[i]));
     }
@@ -61,10 +61,10 @@ struct umbra_mol_t {
 
   std::string GetBinaryMol() {
     std::string buffer;
-    buffer.resize(PREFIX_LENGTH);
-    if (value.ptr && value.length > PREFIX_LENGTH) {
-      memcpy(&buffer, &value.ptr[PREFIX_LENGTH], value.length - PREFIX_LENGTH);
-    }
+    // buffer.resize(PREFIX_LENGTH);
+    // if (value.ptr && value.length > PREFIX_LENGTH) {
+    //   memcpy(&buffer, &data[PREFIX_LENGTH], value.length - PREFIX_LENGTH);
+    // }
     return buffer;
   }
 
