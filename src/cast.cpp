@@ -61,9 +61,10 @@ void UmbraMolToVarchar(Vector &source, Vector &result, idx_t count) {
 
         auto umbra_mol = umbra_mol_t(b_umbra_mol);
         auto bmol = umbra_mol.GetBinaryMol();
-        // for (char b : bmol) {
-        //   printf("%02x ", static_cast<unsigned char>(b));
-        // }
+        std::cout << "\nbmol from umbramol to varchar" << std::endl;
+        for (char b : bmol) {
+          printf("%02x ", static_cast<unsigned char>(b));
+        }
 
         auto rdkit_mol = rdkit_binary_mol_to_mol(bmol);
         auto smiles = rdkit_mol_to_smiles(*rdkit_mol);
