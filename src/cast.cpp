@@ -59,21 +59,22 @@ void UmbraMolToVarchar(Vector &source, Vector &result, idx_t count) {
         // UmbraMol BLOB and will trigger this cast function.
         // Therefore, this function expects that the input
         // contains a string that has the format of umbra_mol_t
-        std::cout << "\nUmbraMolToVarchar" << std::endl;
-        for (char b : b_umbra_mol.GetString()) {
-          printf("%02x ", static_cast<unsigned char>(b));
-        }
+
+        // std::cout << "\nUmbraMolToVarchar" << std::endl;
+        // for (char b : b_umbra_mol.GetString()) {
+        //   printf("%02x ", static_cast<unsigned char>(b));
+        // }
 
         auto umbra_mol = umbra_mol_t(b_umbra_mol);
         auto bmol = umbra_mol.GetBinaryMol();
-        std::cout << "\nbmol from umbramol to varchar" << std::endl;
-        for (char b : bmol) {
-          printf("%02x ", static_cast<unsigned char>(b));
-        }
-        std::cout << "UMBRA MOL GET STRING: " << std::endl;
-        for (char b : umbra_mol.GetString()) {
-          printf("%02x ", static_cast<unsigned char>(b));
-        }
+        // std::cout << "\nbmol from umbramol to varchar" << std::endl;
+        // for (char b : bmol) {
+        //   printf("%02x ", static_cast<unsigned char>(b));
+        // }
+        // std::cout << "UMBRA MOL GET STRING: " << std::endl;
+        // for (char b : umbra_mol.GetString()) {
+        //   printf("%02x ", static_cast<unsigned char>(b));
+        // }
 
         auto rdkit_mol = rdkit_binary_mol_to_mol(bmol);
         auto smiles = rdkit_mol_to_smiles(*rdkit_mol);
@@ -100,8 +101,8 @@ void VarcharToUmbraMol(Vector &source, Vector &result, idx_t count) {
         auto num_rings = mol->getRingInfo()->numRings();
 
         auto pickled_mol = rdkit_mol_to_binary_mol(*mol);
-        auto umbra_mol =
-            count_prefix(num_atoms, num_bonds, amw, num_rings, pickled_mol);
+        auto umbra_mol = get_umbra_mol_string(num_atoms, num_bonds, amw,
+                                              num_rings, pickled_mol);
 
         return StringVector::AddStringOrBlob(result, umbra_mol);
       });

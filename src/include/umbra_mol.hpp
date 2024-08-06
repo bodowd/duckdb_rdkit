@@ -15,8 +15,9 @@ namespace duckdb_rdkit {
 // so that it can then be sent to a string_t. Return the std::string because
 // later the StringVector::AddStringOrBlob function takes a std::string, not
 // string_t
-std::string count_prefix(uint32_t num_atoms, uint32_t num_bonds, uint32_t amw,
-                         uint32_t num_rings, const std::string &binary_mol);
+std::string get_umbra_mol_string(uint32_t num_atoms, uint32_t num_bonds,
+                                 uint32_t amw, uint32_t num_rings,
+                                 const std::string &binary_mol);
 
 struct umbra_mol_t {
   static constexpr idx_t COUNT_PREFIX_BYTES = 4 * sizeof(char);
@@ -64,28 +65,26 @@ struct umbra_mol_t {
     value.length = buffer.GetSize();
     memset(value.prefix, 0, PREFIX_LENGTH);
     memcpy(&value.prefix, buffer.GetPrefix(), PREFIX_LENGTH);
-    // the lambda expression `[](char*){}` is a custom deleter for cleaning up
-    // when the last owner of the shared_ptr is destroyed
-    std::cout << "\nCONSTRUCTOR:" << std::endl;
-    for (char b : buffer.GetString()) {
-      printf("%02x ", static_cast<unsigned char>(b));
-    }
-    std::cout << "\nBuffer size: " << buffer.GetSize() << std::endl;
-    std::cout << "Print from buffer pointer: " << std::endl;
-    auto p = buffer.GetData();
-    for (auto i = 0; i < buffer.GetSize(); i++) {
-      printf("%02x ", static_cast<unsigned char>(p[i]));
-    }
+    // std::cout << "\nCONSTRUCTOR:" << std::endl;
+    // for (char b : buffer.GetString()) {
+    //   printf("%02x ", static_cast<unsigned char>(b));
+    // }
+    // std::cout << "\nBuffer size: " << buffer.GetSize() << std::endl;
+    // std::cout << "Print from buffer pointer: " << std::endl;
+    // auto p = buffer.GetData();
+    // for (auto i = 0; i < buffer.GetSize(); i++) {
+    //   printf("%02x ", static_cast<unsigned char>(p[i]));
+    // }
 
-    std::cout << "Print from value.ptr: " << std::endl;
+    // std::cout << "Print from value.ptr: " << std::endl;
     value.ptr = buffer.GetData();
-    for (auto i = 0; i < buffer.GetSize(); i++) {
-      printf("%02x ", static_cast<unsigned char>(value.ptr[i]));
-    }
+    // for (auto i = 0; i < buffer.GetSize(); i++) {
+    //   printf("%02x ", static_cast<unsigned char>(value.ptr[i]));
+    // }
 
     D_ASSERT(value.ptr == buffer.GetData());
-    std::cout << "value.ptr == buffer.GetData(): "
-              << (value.ptr == buffer.GetData()) << std::endl;
+    // std::cout << "value.ptr == buffer.GetData(): "
+    //           << (value.ptr == buffer.GetData()) << std::endl;
   }
 
   const char *GetPrefix() { return value.prefix; }

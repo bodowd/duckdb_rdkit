@@ -147,9 +147,9 @@ std::string get_umbra_mol_string(uint32_t num_atoms, uint32_t num_bonds,
                 umbra_mol_t::DALKE_FP_PREFIX_BYTES);
   buffer.append(binary_mol);
 
-  for (char b : buffer) {
-    printf("%02x ", static_cast<unsigned char>(b));
-  }
+  // for (char b : buffer) {
+  //   printf("%02x ", static_cast<unsigned char>(b));
+  // }
   return buffer;
 }
 } // namespace duckdb_rdkit
