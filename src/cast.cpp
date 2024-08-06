@@ -54,6 +54,11 @@ bool MolToVarcharCast(Vector &source, Vector &result, idx_t count,
 void UmbraMolToVarchar(Vector &source, Vector &result, idx_t count) {
   UnaryExecutor::Execute<string_t, string_t>(
       source, result, count, [&](string_t b_umbra_mol) {
+        // The input is a string_t coming from the duckdb system.
+        // The extension recognizes that this string_t is an
+        // UmbraMol BLOB and will trigger this cast function.
+        // Therefore, this function expects that the input
+        // contains a string that has the format of umbra_mol_t
         std::cout << "\nUmbraMolToVarchar" << std::endl;
         for (char b : b_umbra_mol.GetString()) {
           printf("%02x ", static_cast<unsigned char>(b));
@@ -63,6 +68,10 @@ void UmbraMolToVarchar(Vector &source, Vector &result, idx_t count) {
         auto bmol = umbra_mol.GetBinaryMol();
         std::cout << "\nbmol from umbramol to varchar" << std::endl;
         for (char b : bmol) {
+          printf("%02x ", static_cast<unsigned char>(b));
+        }
+        std::cout << "UMBRA MOL GET STRING: " << std::endl;
+        for (char b : umbra_mol.GetString()) {
           printf("%02x ", static_cast<unsigned char>(b));
         }
 
@@ -81,6 +90,7 @@ bool UmbraMolToVarcharCast(Vector &source, Vector &result, idx_t count,
 void VarcharToUmbraMol(Vector &source, Vector &result, idx_t count) {
   UnaryExecutor::Execute<string_t, string_t>(
       source, result, count, [&](string_t smiles) {
+        std::cout << "VARCHAR to UMBRA MOL" << std::endl;
         // this varchar is just a regular string, not a umbramol
         auto mol = rdkit_mol_from_smiles(smiles.GetString());
         // add the meta data to the front of pickled mol and store the buffer
@@ -90,10 +100,10 @@ void VarcharToUmbraMol(Vector &source, Vector &result, idx_t count) {
         auto num_rings = mol->getRingInfo()->numRings();
 
         auto pickled_mol = rdkit_mol_to_binary_mol(*mol);
-        auto umbra_mol = string_t(
-            count_prefix(num_atoms, num_bonds, amw, num_rings, pickled_mol));
+        auto umbra_mol =
+            count_prefix(num_atoms, num_bonds, amw, num_rings, pickled_mol);
 
-        return StringVector::AddString(result, umbra_mol);
+        return StringVector::AddStringOrBlob(result, umbra_mol);
       });
 }
 

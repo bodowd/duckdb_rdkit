@@ -5,8 +5,9 @@
 #include <string>
 
 namespace duckdb_rdkit {
-std::string count_prefix(uint32_t num_atoms, uint32_t num_bonds, uint32_t amw,
-                         uint32_t num_rings, const std::string &binary_mol) {
+std::string get_umbra_mol_string(uint32_t num_atoms, uint32_t num_bonds,
+                                 uint32_t amw, uint32_t num_rings,
+                                 const std::string &binary_mol) {
   /* The prefix has the following format, from highest order bits
    * to the lowest order bits
    * num atoms 7 bits
