@@ -28,7 +28,8 @@ struct umbra_mol_t {
   // for now, maybe this could be optimized and not waste
   // so much space
   // so 4 bytes + 8 byes = 12 bytes for prefix length
-  static constexpr idx_t PREFIX_BYTES = 12 * sizeof(char);
+  static constexpr idx_t PREFIX_BYTES =
+      COUNT_PREFIX_BYTES + DALKE_FP_PREFIX_BYTES;
   static constexpr idx_t INLINE_BYTES = 12 * sizeof(char);
   static constexpr idx_t HEADER_SIZE = sizeof(uint32_t) + PREFIX_BYTES;
   static constexpr idx_t MAX_STRING_SIZE = NumericLimits<uint32_t>::Maximum();
@@ -92,11 +93,11 @@ struct umbra_mol_t {
   uint32_t GetBinaryMolSize() { return value.length - PREFIX_LENGTH; }
 
   std::string GetBinaryMol() {
+    idx_t bmol_size = value.length - PREFIX_LENGTH;
     std::string buffer;
-    buffer.resize(value.length - PREFIX_LENGTH);
+    buffer.resize(bmol_size);
     if (value.ptr && value.length > PREFIX_LENGTH) {
-      memcpy(&buffer[0], &value.ptr[PREFIX_LENGTH],
-             value.length - PREFIX_LENGTH);
+      memcpy(&buffer[0], &value.ptr[PREFIX_LENGTH], bmol_size);
     }
     return buffer;
   }
