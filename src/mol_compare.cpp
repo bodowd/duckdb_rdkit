@@ -180,17 +180,24 @@ static void umbra_is_exact_match(DataChunk &args, ExpressionState &state,
         //   printf("%02x ", static_cast<unsigned char>(b));
         // }
 
-        // first 27 bits of the prefix are the counts
-        // That fits into a uint32_t
-        // First copy the first 4 bytes of the prefix
-        // Then get the 27 bits of the prefix
-        uint32_t a_count_prefix_32;
-        memcpy(&a_count_prefix_32, left.GetPrefix(),
-               umbra_mol_t::COUNT_PREFIX_BYTES);
+        // The first 32 bits are the count prefix
+        // The exact match only needs the count prefix
+        // so just copy those bytes and not the full prefix
+        // uint32_t a_count_prefix_32;
+        // memcpy(&a_count_prefix_32, left.GetPrefix(),
+        //        umbra_mol_t::COUNT_PREFIX_BYTES);
+        //
+        // uint32_t b_count_prefix_32;
+        // memcpy(&b_count_prefix_32, right.GetPrefix(),
+        //        umbra_mol_t::COUNT_PREFIX_BYTES);
 
-        uint32_t b_count_prefix_32;
-        memcpy(&b_count_prefix_32, right.GetPrefix(),
-               umbra_mol_t::COUNT_PREFIX_BYTES);
+        // Only compare the first 32 bits because that's all that is
+        // needed for the exact match screen
+        if (memcmp(left.GetPrefix(), right.GetPrefix(),
+                   umbra_mol_t::COUNT_PREFIX_BYTES) != 0) {
+          return false;
+        };
+
         // shift to the right to get the highest 27 bits
         // The counts prefix are packed all the way to the highest
         // bit, number 31 (counting from 0), so the lowest 5 bits are not
@@ -204,9 +211,9 @@ static void umbra_is_exact_match(DataChunk &args, ExpressionState &state,
 
         // std::cout << std::hex << a_count_prefix_32 << std::endl;
         // std::cout << std::hex << b_count_prefix_32 << std::endl;
-        if (a_count_prefix_32 != b_count_prefix_32) {
-          return false;
-        }
+        // if (a_count_prefix_32 != b_count_prefix_32) {
+        //   return false;
+        // }
 
         // otherwise, do the more extensive check with rdkit
         return umbra_mol_cmp(left.GetBinaryMol(), right.GetBinaryMol());

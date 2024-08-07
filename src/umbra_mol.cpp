@@ -116,28 +116,6 @@ std::string get_umbra_mol_string(uint32_t num_atoms, uint32_t num_bonds,
   // functions behave like the string_t when the rest of duckdb thinks
   // umbra_mol_t is a string_t
   // First, combine the prefix and binary mol
-  // FIXME: Only 27 bits of the prefix is calculated, and the remaining
-  // 55 bits will be random numbers that change with each run because
-  // dalke_fp is not implemented yet
-
-  // std::string buffer;
-  // buffer.resize(PREFIX_BYTES + binary_mol.size());
-  // idx_t offset = 0;
-  // // copy the first 32 bits of the prefix -- the counts
-  // memcpy(&buffer[offset], &prefix, COUNT_PREFIX_BYTES);
-  // offset += COUNT_PREFIX_BYTES;
-  // // copy the dalke_fp
-  // memcpy(&buffer[offset], &dalke_fp, DALKE_FP_PREFIX_BYTES);
-  // offset += DALKE_FP_PREFIX_BYTES;
-  // // copy the binary mol
-  // memcpy(&buffer[offset], &binary_mol[0], binary_mol.size());
-  // std::cout << "after memcpy first" << std::endl;
-  // // now copy just the first PREFIX_LENGTH bytes to prefix
-  // // and the whole combined data to ptr
-  // memcpy(value.pointer.prefix, &buffer.data()[0], PREFIX_LENGTH);
-  // std::cout << "after memcpy second" << std::endl;
-  // value.pointer.ptr = (char *)buffer.data();
-  // std::cout << "done" << std::endl;
 
   std::string buffer;
   buffer.reserve(umbra_mol_t::PREFIX_BYTES + binary_mol.size());
@@ -150,6 +128,7 @@ std::string get_umbra_mol_string(uint32_t num_atoms, uint32_t num_bonds,
   // for (char b : buffer) {
   //   printf("%02x ", static_cast<unsigned char>(b));
   // }
+
   return buffer;
 }
 } // namespace duckdb_rdkit
