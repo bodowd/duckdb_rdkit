@@ -162,60 +162,54 @@ static void umbra_is_exact_match(DataChunk &args, ExpressionState &state,
   BinaryExecutor::Execute<string_t, string_t, bool>(
       left, right, result, args.size(),
       [&](string_t &left_umbra_blob, string_t &right_umbra_blob) {
-        std::cout << "umbra_is_exact_match: " << std::endl;
-        std::cout << "\nleft_umbra_blob: " << std::endl;
-        auto left_ptr = left_umbra_blob.GetData();
-        for (auto i = 0; i < left_umbra_blob.GetSize(); i++) {
-          printf("%02x ", static_cast<unsigned char>(left_ptr[i]));
-        }
-        std::cout << "\nright_umbra_blob: " << std::endl;
-        auto right_ptr = right_umbra_blob.GetData();
-        for (auto i = 0; i < right_umbra_blob.GetSize(); i++) {
-          printf("%02x ", static_cast<unsigned char>(right_ptr[i]));
-        }
+        // std::cout << "umbra_is_exact_match: " << std::endl;
+        // std::cout << "\nleft_umbra_blob: " << std::endl;
+        // auto left_ptr = left_umbra_blob.GetData();
+        // for (auto i = 0; i < left_umbra_blob.GetSize(); i++) {
+        //   printf("%02x ", static_cast<unsigned char>(left_ptr[i]));
+        // }
+        // std::cout << "\nright_umbra_blob: " << std::endl;
+        // auto right_ptr = right_umbra_blob.GetData();
+        // for (auto i = 0; i < right_umbra_blob.GetSize(); i++) {
+        //   printf("%02x ", static_cast<unsigned char>(right_ptr[i]));
+        // }
         auto left = umbra_mol_t(left_umbra_blob);
         auto right = umbra_mol_t(right_umbra_blob);
 
-        for (char b : left.GetString()) {
-          printf("%02x ", static_cast<unsigned char>(b));
-        }
+        // for (char b : left.GetString()) {
+        //   printf("%02x ", static_cast<unsigned char>(b));
+        // }
 
         // first 27 bits of the prefix are the counts
         // That fits into a uint32_t
         // First copy the first 4 bytes of the prefix
         // Then get the 27 bits of the prefix
-        uint32_t a_count_prefix;
-        memcpy(&a_count_prefix, left.GetPrefix(),
+        uint32_t a_count_prefix_32;
+        memcpy(&a_count_prefix_32, left.GetPrefix(),
                umbra_mol_t::COUNT_PREFIX_BYTES);
 
-        uint32_t b_count_prefix;
-        memcpy(&b_count_prefix, right.GetPrefix(),
+        uint32_t b_count_prefix_32;
+        memcpy(&b_count_prefix_32, right.GetPrefix(),
                umbra_mol_t::COUNT_PREFIX_BYTES);
         // shift to the right to get the highest 27 bits
         // The counts prefix are packed all the way to the highest
         // bit, number 31 (counting from 0), so the lowest 5 bits are not
         // part of the count prefix
-        // uint32_t a_count_prefix = a_prefix_32_bits >> 5;
-        // uint32_t b_count_prefix = b_prefix_32_bits >> 5;
+        // uint32_t a_count_prefix = a_count_prefix_32 >> 5;
+        // uint32_t b_count_prefix = b_count_prefix_32 >> 5;
 
         // auto a_prefix = Load<uint32_t>(const_data_ptr_cast(a.GetPrefix()));
         // uint16_t b_prefix =
         // Load<uint32_t>(const_data_ptr_cast(b.GetPrefix()));
 
-        if (a_count_prefix != b_count_prefix) {
+        // std::cout << std::hex << a_count_prefix_32 << std::endl;
+        // std::cout << std::hex << b_count_prefix_32 << std::endl;
+        if (a_count_prefix_32 != b_count_prefix_32) {
           return false;
         }
 
         // otherwise, do the more extensive check with rdkit
-
-        // std::string a_bmol;
-        // std::string b_bmol;
-        // memcpy(&a_bmol[0], left.GetBinaryMol(), left.GetBina());
-        // memcpy(&b_bmol[0], right.GetBinaryMol(), right.GetBmolSize());
-        //
-        // return umbra_mol_cmp(a_bmol, b_bmol);
-
-        return true;
+        return umbra_mol_cmp(left.GetBinaryMol(), right.GetBinaryMol());
       });
 }
 

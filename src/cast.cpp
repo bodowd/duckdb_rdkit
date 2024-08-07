@@ -91,7 +91,7 @@ bool UmbraMolToVarcharCast(Vector &source, Vector &result, idx_t count,
 void VarcharToUmbraMol(Vector &source, Vector &result, idx_t count) {
   UnaryExecutor::Execute<string_t, string_t>(
       source, result, count, [&](string_t smiles) {
-        std::cout << "VARCHAR to UMBRA MOL" << std::endl;
+        // std::cout << "VARCHAR to UMBRA MOL" << std::endl;
         // this varchar is just a regular string, not a umbramol
         auto mol = rdkit_mol_from_smiles(smiles.GetString());
         // add the meta data to the front of pickled mol and store the buffer

@@ -89,6 +89,8 @@ struct umbra_mol_t {
 
   const char *GetPrefix() { return value.prefix; }
 
+  uint32_t GetBinaryMolSize() { return value.length - PREFIX_LENGTH; }
+
   std::string GetBinaryMol() {
     std::string buffer;
     buffer.resize(value.length - PREFIX_LENGTH);
