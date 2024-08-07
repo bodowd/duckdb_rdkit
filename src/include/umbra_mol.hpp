@@ -15,9 +15,7 @@ namespace duckdb_rdkit {
 // so that it can then be sent to a string_t. Return the std::string because
 // later the StringVector::AddStringOrBlob function takes a std::string, not
 // string_t
-std::string get_umbra_mol_string(uint32_t num_atoms, uint32_t num_bonds,
-                                 uint32_t amw, uint32_t num_rings,
-                                 const std::string &binary_mol);
+std::string get_umbra_mol_string(const RDKit::ROMol &mol);
 
 struct umbra_mol_t {
   static constexpr idx_t COUNT_PREFIX_BYTES = 4 * sizeof(char);

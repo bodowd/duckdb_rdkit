@@ -100,9 +100,7 @@ void VarcharToUmbraMol(Vector &source, Vector &result, idx_t count) {
         auto amw = RDKit::Descriptors::calcAMW(*mol);
         auto num_rings = mol->getRingInfo()->numRings();
 
-        auto pickled_mol = rdkit_mol_to_binary_mol(*mol);
-        auto umbra_mol = get_umbra_mol_string(num_atoms, num_bonds, amw,
-                                              num_rings, pickled_mol);
+        auto umbra_mol = get_umbra_mol_string(*mol);
 
         return StringVector::AddStringOrBlob(result, umbra_mol);
       });

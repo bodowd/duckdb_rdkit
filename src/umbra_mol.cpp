@@ -1,31 +1,143 @@
 #pragma once
 #include "umbra_mol.hpp"
 #include "common.hpp"
+#include "mol_formats.hpp"
+#include <GraphMol/SmilesParse/SmilesParse.h>
+#include <GraphMol/Substruct/SubstructMatch.h>
 #include <cstdint>
 #include <string>
 
 namespace duckdb_rdkit {
-std::string get_umbra_mol_string(uint32_t num_atoms, uint32_t num_bonds,
-                                 uint32_t amw, uint32_t num_rings,
-                                 const std::string &binary_mol) {
-  /* The prefix has the following format, from highest order bits
-   * to the lowest order bits
-   * num atoms 7 bits
-   * num bonds 6 bits
-   * num rings 3 bits
-   * amw 11 bits
-   * total 27 bits
-   * pack into 32 bit unsigned int
-   * 5 bits left over for something else if needed
-   */
+
+// fragments and number of times they appear
+// use a vector to keep the order. The order oof the vector will inform the
+// bit order
+// "O" 2 times, is bit 0,
+// "O" 3 times is bit 1, etc...
+std::vector<std::vector<string>> dalke_counts = {{"O", "2", "3", "1", "4", "5"},
+                                                 {"Ccc", "2", "4"},
+                                                 {"CCN", "1"},
+                                                 {"cnc", "1"},
+                                                 {"cN", "1"},
+                                                 {"C=O", "1"},
+                                                 {"CCC", "1"},
+                                                 {"S", "1"},
+                                                 {"c1ccccc1", "1", "2"},
+                                                 {"N", "2", "3", "1"},
+                                                 {"C=C", "1"},
+                                                 {"nn", "1"},
+                                                 {"CO", "2"},
+                                                 {"Ccn", "1", "2"},
+                                                 {"CCCCC", "1"},
+                                                 {"cc(c)c", "1"},
+                                                 {"CNC", "2"},
+                                                 {"s", "1"},
+                                                 {"CC(C)C", "1"},
+                                                 {"o", "1"},
+                                                 {"cncnc", "1"},
+                                                 {"C=N", "1"},
+                                                 {"CC=O", "2", "3"},
+                                                 {"Cl", "1"},
+                                                 {"ccncc", "2"},
+                                                 {"CCCCCC", "6"},
+                                                 {"F", "1"},
+                                                 {"CCOC", "3"},
+                                                 {"c(cn)n", "1"},
+                                                 {"C", "9", "6", "1"},
+                                                 {"CC=C(C)C", "1"},
+                                                 {"c1ccncc1", "1"},
+                                                 {"CC(C)N", "1"},
+                                                 {"CC", "1"},
+                                                 {"CCC(C)O", "4"},
+                                                 {"ccc(cc)n", "2"},
+                                                 {"C1CCCC1", "1"},
+                                                 {"CNCN", "1"},
+                                                 {"cncn", "3"},
+                                                 {"CSC", "1"},
+                                                 {"CCNCCCN", "1"},
+                                                 {"CccC", "1"},
+                                                 {"ccccc(c)c", "3"}};
+
+uint64_t make_dalke_fp(const RDKit::ROMol &target) {
+  std::bitset<56> bs;
+  RDKit::SubstructMatchParameters params;
+  params.uniquify = true;
+  params.useQueryQueryMatches = false;
+  params.recursionPossible = true;
+  params.useChirality = false;
+  params.maxMatches = 10;
+  params.numThreads = 1;
+
+  uint8_t curBit = 0;
+  // for each of the dalke fragments, check if it is found
+  // in the target molecule, the one that an UmbraMol will be constructed for
+  // the dalke fp is the query molecule
+  for (const auto &fp : dalke_counts) {
+    std::unique_ptr<RDKit::ROMol> dalke_fp_mol;
+
+    try {
+      dalke_fp_mol.reset(RDKit::SmilesToMol(fp[0], 0, false));
+    } catch (std::exception &e) {
+      std::string msg = StringUtil::Format("%s", typeid(e).name());
+      throw FatalException(msg);
+    }
+
+    auto matchVect = RDKit::SubstructMatch(target, *dalke_fp_mol, params);
+
+    // if the target has the fp substructure in it at least $NUMBER of times
+    // it appears, set that bit
+    for (auto i = 1; i < fp.size(); i++) {
+      if (matchVect.size() >= std::stoi(fp[i])) {
+        bs.set(curBit);
+      }
+
+      curBit++;
+    }
+  }
+
+  D_ASSERT(curBit == 55);
+  return bs.to_ulong();
+
+  // for (int i = 63; i >= 0; --i) {
+  //   if (i % 10 == 0) {
+  //     std::cout << " " << std::endl;
+  //   }
+  //   // Print each bit (1 or 0)
+  //   std::cout << ((u >> i) & 1);
+  // }
+}
+
+std::string get_umbra_mol_string(const RDKit::ROMol &mol) {
+  auto binary_mol = rdkit_mol_to_binary_mol(mol);
+  size_t total_size = umbra_mol_t::PREFIX_BYTES + binary_mol.size();
+
+  // Add the prefix in front of the binary molecule object
+  //
+  // The prefix consists of two parts: some simple counts used for filtering
+  // records in exact match and a bit vector that marks the presence of
+  // certain substructures for filtering records in substructure match
+  // searches
+
+  // The counts prefix consists of
+  // number of atoms, 7 bits
+  // number of bonds, 6 bits
+  // number of rings, 3 bits
+  // amw, 11 bits
+  // In total that is 27 bits, which is placed into a uint32_t.
+  // There are 5 bits left over, but this makes alignment a little easier
+  // particularly when the dalke fingerprint vector is included
+  uint32_t num_atoms = mol.getNumAtoms();
+  uint32_t num_bonds = mol.getNumBonds();
+  uint32_t amw = RDKit::Descriptors::calcAMW(mol);
+  uint32_t num_rings = mol.getRingInfo()->numRings();
 
   uint32_t prefix;
-  prefix = 0;
   // std::cout << "CONSTRUCTOR FOR umbra_mol_t" << std::endl;
   // std::cout << "NUM_ATOMS IN INPUT: " << num_atoms << std::endl;
   // std::cout << "NUM_BONDS IN INPUT: " << num_bonds << std::endl;
   // std::cout << "NUM_RINGS IN INPUT: " << num_rings << std::endl;
   // std::cout << "AMW IN INPUT: " << amw << std::endl;
+
   // cap the count if it is larger than the number of bits it supports
   // number of bits for each count supports the 99 percentile of
   // values in chembl
@@ -71,63 +183,20 @@ std::string get_umbra_mol_string(uint32_t num_atoms, uint32_t num_bonds,
   // at the 5th place
   prefix |= (amw & 0x7FF) << 5;
 
-  // TODO:  dalke_fp
-
-  uint64_t dalke_fp;
-  dalke_fp = 0;
-
-  //
-  // Only the highest 27 bits are part of the prefix
-  // At this point, the prefix looks like this:
-  // |-------------- 32 bits ---------------|
-  // |--27 bits count prefix--|
-  //
-  // A uint64_t will be used to construct the dalke_fp, which is has a
-  // length of 55 bits.
-  // |----------------------64 bits ----------------------|
-  // |------- 55 bits dalke_fp -------------|
-  //
-  // Then, the first 5 bits will be copied to the lower 5 bits of the 32
-  // already allocated above.
-  // |-------------- 32 bits --------------------|
-  // |--27 bits count prefix--|--5 bit dalke_fp--|
-  // and
-  // The remaining highest order 50 bits will be copied to the prefix as
-  // well
-  //
-  // |-------- 88 bits prefix -------|
-  // |- 82 bits counts + dalke_fp -|
-  // |----27-----|--5--|----50 ----|
-  //
-  //
-  // In total, the prefix will then be 82 bits (27 bit count prefix + 55 bit
-  // dalke_fp), which goes into 11 bytes (88 bits). The lowest order 6 bits
-  // of the prefix do not represent anything.
-
-  // The value.pointer.ptr field should contain the prefix+binary mol
-  // Therefore, we copy the prefix and binary mol into a std::string buffer
-  // in order to combine the data, and then we copy just the first
-  // PREFIX_LENGTH bytes of the combined data into the prefix, and
-  // then copy the entire combined data into the ptr field
-  // Rather than copying prefix just into the value.pointer.prefix field
-  // and then the ptr only containing the binary molecule,
-  // doing it this way is more consistent with how the string_t
-  // implementation is done, and we want to make sure the implemented
-  // functions behave like the string_t when the rest of duckdb thinks
-  // umbra_mol_t is a string_t
-  // First, combine the prefix and binary mol
+  auto dalke_fp = make_dalke_fp(mol);
 
   std::string buffer;
-  buffer.reserve(umbra_mol_t::PREFIX_BYTES + binary_mol.size());
+  buffer.reserve(total_size);
   buffer.append(reinterpret_cast<const char *>(&prefix),
                 umbra_mol_t::COUNT_PREFIX_BYTES);
   buffer.append(reinterpret_cast<const char *>(&dalke_fp),
                 umbra_mol_t::DALKE_FP_PREFIX_BYTES);
   buffer.append(binary_mol);
 
-  // for (char b : buffer) {
-  //   printf("%02x ", static_cast<unsigned char>(b));
-  // }
+  std::cout << "full umbra mol" << std::endl;
+  for (char b : buffer) {
+    printf("%02x ", static_cast<unsigned char>(b));
+  }
 
   return buffer;
 }

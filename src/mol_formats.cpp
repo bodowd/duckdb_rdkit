@@ -134,16 +134,8 @@ void umbra_mol_from_smiles(DataChunk &args, ExpressionState &state,
       [&](string_t smiles, ValidityMask &mask, idx_t idx) {
         try {
           auto mol = rdkit_mol_from_smiles(smiles.GetString());
-          auto pickled_mol = rdkit_mol_to_binary_mol(*mol);
 
-          // add the meta data to the front of pickled mol and store the
-          // buffer
-          auto num_atoms = mol->getNumAtoms();
-          auto num_bonds = mol->getNumBonds();
-          auto amw = RDKit::Descriptors::calcAMW(*mol);
-          auto num_rings = mol->getRingInfo()->numRings();
-          auto res = get_umbra_mol_string(num_atoms, num_bonds, amw, num_rings,
-                                          pickled_mol);
+          auto res = get_umbra_mol_string(*mol);
           // std::cout << "res size: " << res.size() << std::endl;
           // for (char b : res) {
           //   printf("%02x ", static_cast<unsigned char>(b));
