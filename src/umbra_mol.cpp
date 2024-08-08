@@ -58,8 +58,8 @@ std::vector<std::vector<string>> dalke_counts = {{"O", "2", "3", "1", "4", "5"},
                                                  {"CccC", "1"},
                                                  {"ccccc(c)c", "3"}};
 
-uint64_t make_dalke_fp(const RDKit::ROMol &target) {
-  std::bitset<56> bs;
+uint64_t make_dalke_fp(const RDKit::ROMol &mol) {
+  std::bitset<64> bs;
   RDKit::SubstructMatchParameters params;
   params.uniquify = true;
   params.useQueryQueryMatches = false;
@@ -82,7 +82,7 @@ uint64_t make_dalke_fp(const RDKit::ROMol &target) {
       throw FatalException(msg);
     }
 
-    auto matchVect = RDKit::SubstructMatch(target, *dalke_fp_mol, params);
+    auto matchVect = RDKit::SubstructMatch(mol, *dalke_fp_mol, params);
 
     // if the target has the fp substructure in it at least $NUMBER of times
     // it appears, set that bit
@@ -94,9 +94,15 @@ uint64_t make_dalke_fp(const RDKit::ROMol &target) {
       curBit++;
     }
   }
-
+  auto k = bs.to_ullong();
   D_ASSERT(curBit == 55);
-  return bs.to_ulong();
+  // std::cout << "in make_dalke_fp: " << std::endl;
+  // std::cout << bs.to_string() << std::endl;
+  // std::cout << "uint64_t: " << k << std::endl;
+  // std::cout << "bitset size in hex: " << bs.size() << std::endl;
+  // std::cout << "sizeof bitset: " << sizeof(k) << std::endl;
+  // return bs.to_string();
+  return k;
 
   // for (int i = 63; i >= 0; --i) {
   //   if (i % 10 == 0) {
@@ -183,8 +189,14 @@ std::string get_umbra_mol_string(const RDKit::ROMol &mol) {
   // at the 5th place
   prefix |= (amw & 0x7FF) << 5;
 
-  auto dalke_fp = make_dalke_fp(mol);
+  uint64_t dalke_fp = make_dalke_fp(mol);
 
+  // std::cout << "dalke fp" << std::endl;
+  // std::cout << dalke_fp << std::endl;
+  // std::cout << "in hexadecimal: " << std::endl;
+  // std::cout << std::hex << dalke_fp << std::endl;
+
+  // remember to keep endianess in mind. little endian on my machine
   std::string buffer;
   buffer.reserve(total_size);
   buffer.append(reinterpret_cast<const char *>(&prefix),
@@ -193,10 +205,10 @@ std::string get_umbra_mol_string(const RDKit::ROMol &mol) {
                 umbra_mol_t::DALKE_FP_PREFIX_BYTES);
   buffer.append(binary_mol);
 
-  std::cout << "full umbra mol" << std::endl;
-  for (char b : buffer) {
-    printf("%02x ", static_cast<unsigned char>(b));
-  }
+  // std::cout << "full umbra mol" << std::endl;
+  // for (char b : buffer) {
+  //   printf("%02x ", static_cast<unsigned char>(b));
+  // }
 
   return buffer;
 }

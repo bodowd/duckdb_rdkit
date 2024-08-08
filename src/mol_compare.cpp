@@ -249,6 +249,99 @@ static void is_substruct(DataChunk &args, ExpressionState &state,
       });
 }
 
+bool _umbra_is_substruct(umbra_mol_t target, umbra_mol_t query) {
+  // std::ofstream log_file("umbra_substruct_log_file.txt",
+  //                        std::ios_base::out | std::ios_base::app);
+
+  // if the fragment exists in the query but not in the target,
+  // there is no way for a match. This only works in one direction
+  //
+  // If the fragment exists in the target, but not the query, it is still
+  // possible there is something in the query that matches the target, but
+  // is not captured in the dalke fingerprint
+  //
+  // If all fragments that are on in the query are also on in the target,
+  // this does not mean that the query is a substructure. It is possible
+  // that there is something in the query not captured in the fingerprint
+  // that is present in the query, but not in the target. For example,
+  // if the query has NCCCCCCCC, and the target has the N bit set,
+  // but it could be that the target is only NC
+  //
+  // It is only possible to short-circuit in the false case, not in the
+  // true case
+
+  auto query_dalke_fp = query.GetDalkeFPBitset();
+  auto target_dalke_fp = target.GetDalkeFPBitset();
+
+  // std::cout << query_dalke_fp << std::endl;
+  // std::cout << target_dalke_fp << std::endl;
+
+  for (auto i = 0; i < query_dalke_fp.size(); i++) {
+    if (query_dalke_fp[i] && !target_dalke_fp[i]) {
+      // std::cout << "BAILOUT" << std::endl;
+      // log_file << "short circuited" << std::endl;
+      return false;
+    }
+  }
+
+  // otherwise, run a substructure match on the molecule objects
+  std::unique_ptr<RDKit::ROMol> left_mol(new RDKit::ROMol());
+  std::unique_ptr<RDKit::ROMol> right_mol(new RDKit::ROMol());
+
+  RDKit::MolPickler::molFromPickle(target.GetBinaryMol(), *left_mol);
+  RDKit::MolPickler::molFromPickle(query.GetBinaryMol(), *right_mol);
+
+  // copied from chemicalite
+  RDKit::MatchVectType matchVect;
+  bool recursion_possible = true;
+  bool do_chiral_match = false; /* FIXME: make configurable getDoChiralSSS(); */
+  return RDKit::SubstructMatch(*left_mol, *right_mol, matchVect,
+                               recursion_possible, do_chiral_match);
+}
+
+static void umbra_is_substruct(DataChunk &args, ExpressionState &state,
+                               Vector &result) {
+  D_ASSERT(args.ColumnCount() == 2);
+  // args.data[i] is a FLAT_VECTOR
+  auto &left = args.data[0];
+  auto &right = args.data[1];
+  // std::cout << "UMBRA IS SUBSTRUCT CALLED!" << std::endl;
+
+  // cache binary molecules (which come from query smiles -- the
+  // right_umbra_blob) that have been seen so we do not need to regenerate the
+  // DalkeFP because that is costly
+  // std::map<std::string, std::bitset<umbra_mol_t::DALKE_BIT_VECT_SIZE_BITS>>
+  //     seen;
+  //
+  // std::ofstream log_file("log_file.txt",
+  //                        std::ios_base::out | std::ios_base::app);
+
+  BinaryExecutor::Execute<string_t, string_t, bool>(
+      left, right, result, args.size(),
+      [&](string_t &left_umbra_blob, string_t &right_umbra_blob) {
+        auto left_umbra_mol = umbra_mol_t(left_umbra_blob);
+        auto right_umbra_mol = umbra_mol_t(right_umbra_blob);
+
+        // auto it = seen.find(right_umbra_mol.bmol);
+
+        // we have seen this molecule already, just use the stored
+        // dalke fp
+        // if (it != seen.end()) {
+        //   right_umbra_mol.dalke_bitset = it->second;
+        //   log_file << "cache hit" << std::endl;
+        // } else {
+        //   log_file << "cache miss" << std::endl;
+        //   log_file << "rightt umbra mol: "
+        //            << right_umbra_mol.dalke_bitset.to_string() << std::endl;
+        //   right_umbra_mol.GenerateDalkeFP();
+        //   seen.insert(
+        //       std::pair(right_umbra_mol.bmol, right_umbra_mol.dalke_bitset));
+        //   log_file << right_umbra_mol.dalke_bitset.to_string() << std::endl;
+        // }
+        return _umbra_is_substruct(left_umbra_mol, right_umbra_mol);
+      });
+}
+
 void RegisterCompareFunctions(DatabaseInstance &instance) {
   ScalarFunctionSet set("is_exact_match");
   // left type and right type

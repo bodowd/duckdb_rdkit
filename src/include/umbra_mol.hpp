@@ -63,7 +63,7 @@ struct umbra_mol_t {
   umbra_mol_t(string_t buffer) {
     value.length = buffer.GetSize();
     memset(value.prefix, 0, PREFIX_LENGTH);
-    memcpy(&value.prefix, buffer.GetPrefix(), PREFIX_LENGTH);
+    memcpy(&value.prefix, buffer.GetData(), PREFIX_LENGTH);
     // std::cout << "\nCONSTRUCTOR:" << std::endl;
     // for (char b : buffer.GetString()) {
     //   printf("%02x ", static_cast<unsigned char>(b));
@@ -84,6 +84,28 @@ struct umbra_mol_t {
     D_ASSERT(value.ptr == buffer.GetData());
     // std::cout << "value.ptr == buffer.GetData(): "
     //           << (value.ptr == buffer.GetData()) << std::endl;
+  }
+
+  std::bitset<64> GetDalkeFPBitset() {
+    // for (auto i = 0; i < PREFIX_LENGTH; i++) {
+    //   printf("%02x ", static_cast<unsigned char>(value.prefix[i]));
+    // }
+    uint64_t int_fp = 0;
+    // the bug was I was copying from &value.prefx, not value.prefix
+    //  &value.prefix is not the data itself, but it is the address
+    //  of the prefix member of the struct.
+    //  Then I added 4 bytes to it. This gives me an incorrect
+    //  memory address.
+    //  Instead, I want the data itself. value.prefix gives the starting
+    //  address of the char[] in value.prefix, which is the data itself.
+    //  Then I move the pointer 4 bytes, which is what I want
+    std::memcpy(&int_fp, value.prefix + COUNT_PREFIX_BYTES,
+                DALKE_FP_PREFIX_BYTES);
+    std::bitset<64> fp(int_fp);
+    // std::cout << "IN GetDalkeFPBitset: " << std::endl;
+    // std::cout << fp.to_ullong() << std::endl;
+
+    return fp;
   }
 
   const char *GetPrefix() { return value.prefix; }

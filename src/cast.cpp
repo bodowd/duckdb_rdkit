@@ -94,12 +94,6 @@ void VarcharToUmbraMol(Vector &source, Vector &result, idx_t count) {
         // std::cout << "VARCHAR to UMBRA MOL" << std::endl;
         // this varchar is just a regular string, not a umbramol
         auto mol = rdkit_mol_from_smiles(smiles.GetString());
-        // add the meta data to the front of pickled mol and store the buffer
-        auto num_atoms = mol->getNumAtoms();
-        auto num_bonds = mol->getNumBonds();
-        auto amw = RDKit::Descriptors::calcAMW(*mol);
-        auto num_rings = mol->getRingInfo()->numRings();
-
         auto umbra_mol = get_umbra_mol_string(*mol);
 
         return StringVector::AddStringOrBlob(result, umbra_mol);
