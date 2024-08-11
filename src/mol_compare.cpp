@@ -91,36 +91,7 @@ static void is_exact_match(DataChunk &args, ExpressionState &state,
       });
 }
 
-// bool umbra_mol_cmp(std::string m1_bmol, std::string m2_bmol) {
-//
-//   // otherwise, run a full check on the molecule objects
-//   std::unique_ptr<RDKit::ROMol> left_mol(new RDKit::ROMol());
-//   std::unique_ptr<RDKit::ROMol> right_mol(new RDKit::ROMol());
-//
-//   RDKit::MolPickler::molFromPickle(m1_bmol, *left_mol);
-//   RDKit::MolPickler::molFromPickle(m2_bmol, *right_mol);
-//
-//   // experiment: log when the above check does not short circuit
-//   // {
-//   //   std::ofstream log_file("log_file.txt",
-//   //                          std::ios_base::out | std::ios_base::app);
-//   //   log_file << "left_mol: " << rdkit_mol_to_smiles(*left_mol) << ","
-//   //            << "right_mol: " << rdkit_mol_to_smiles(*right_mol) <<
-//   //            std::endl;
-//   // }
-//   return mol_cmp(*left_mol, *right_mol);
-// }
 bool umbra_mol_cmp(std::string m1_bmol, std::string m2_bmol) {
-  // experiment: log when the above check does not short circuit
-  // {
-  //   std::ofstream log_file("log_file.txt",
-  //                          std::ios_base::out | std::ios_base::app);
-  //   log_file << "left_mol: " << rdkit_mol_to_smiles(*left_mol) << ","
-  //            << "right_mol: " << rdkit_mol_to_smiles(*right_mol) <<
-  //            std::endl;
-  // }
-
-  // otherwise, run a full check on the molecule objects
   std::unique_ptr<RDKit::ROMol> m1(new RDKit::ROMol());
   std::unique_ptr<RDKit::ROMol> m2(new RDKit::ROMol());
 
@@ -162,58 +133,15 @@ static void umbra_is_exact_match(DataChunk &args, ExpressionState &state,
   BinaryExecutor::Execute<string_t, string_t, bool>(
       left, right, result, args.size(),
       [&](string_t &left_umbra_blob, string_t &right_umbra_blob) {
-        // std::cout << "umbra_is_exact_match: " << std::endl;
-        // std::cout << "\nleft_umbra_blob: " << std::endl;
-        // auto left_ptr = left_umbra_blob.GetData();
-        // for (auto i = 0; i < left_umbra_blob.GetSize(); i++) {
-        //   printf("%02x ", static_cast<unsigned char>(left_ptr[i]));
-        // }
-        // std::cout << "\nright_umbra_blob: " << std::endl;
-        // auto right_ptr = right_umbra_blob.GetData();
-        // for (auto i = 0; i < right_umbra_blob.GetSize(); i++) {
-        //   printf("%02x ", static_cast<unsigned char>(right_ptr[i]));
-        // }
         auto left = umbra_mol_t(left_umbra_blob);
         auto right = umbra_mol_t(right_umbra_blob);
 
-        // for (char b : left.GetString()) {
-        //   printf("%02x ", static_cast<unsigned char>(b));
-        // }
-
         // The first 32 bits are the count prefix
         // The exact match only needs the count prefix
-        // so just copy those bytes and not the full prefix
-        // uint32_t a_count_prefix_32;
-        // memcpy(&a_count_prefix_32, left.GetPrefix(),
-        //        umbra_mol_t::COUNT_PREFIX_BYTES);
-        //
-        // uint32_t b_count_prefix_32;
-        // memcpy(&b_count_prefix_32, right.GetPrefix(),
-        //        umbra_mol_t::COUNT_PREFIX_BYTES);
-
-        // Only compare the first 32 bits because that's all that is
-        // needed for the exact match screen
         if (memcmp(left.GetPrefix(), right.GetPrefix(),
                    umbra_mol_t::COUNT_PREFIX_BYTES) != 0) {
           return false;
         };
-
-        // shift to the right to get the highest 27 bits
-        // The counts prefix are packed all the way to the highest
-        // bit, number 31 (counting from 0), so the lowest 5 bits are not
-        // part of the count prefix
-        // uint32_t a_count_prefix = a_count_prefix_32 >> 5;
-        // uint32_t b_count_prefix = b_count_prefix_32 >> 5;
-
-        // auto a_prefix = Load<uint32_t>(const_data_ptr_cast(a.GetPrefix()));
-        // uint16_t b_prefix =
-        // Load<uint32_t>(const_data_ptr_cast(b.GetPrefix()));
-
-        // std::cout << std::hex << a_count_prefix_32 << std::endl;
-        // std::cout << std::hex << b_count_prefix_32 << std::endl;
-        // if (a_count_prefix_32 != b_count_prefix_32) {
-        //   return false;
-        // }
 
         // otherwise, do the more extensive check with rdkit
         return umbra_mol_cmp(left.GetBinaryMol(), right.GetBinaryMol());
@@ -250,9 +178,6 @@ static void is_substruct(DataChunk &args, ExpressionState &state,
 }
 
 bool _umbra_is_substruct(umbra_mol_t target, umbra_mol_t query) {
-  // std::ofstream log_file("umbra_substruct_log_file.txt",
-  //                        std::ios_base::out | std::ios_base::app);
-
   // if the fragment exists in the query but not in the target,
   // there is no way for a match. This only works in one direction
   //
@@ -273,13 +198,8 @@ bool _umbra_is_substruct(umbra_mol_t target, umbra_mol_t query) {
   auto query_dalke_fp = query.GetDalkeFPBitset();
   auto target_dalke_fp = target.GetDalkeFPBitset();
 
-  // std::cout << query_dalke_fp << std::endl;
-  // std::cout << target_dalke_fp << std::endl;
-
   for (auto i = 0; i < query_dalke_fp.size(); i++) {
     if (query_dalke_fp[i] && !target_dalke_fp[i]) {
-      // std::cout << "BAILOUT" << std::endl;
-      // log_file << "short circuited" << std::endl;
       return false;
     }
   }
@@ -305,16 +225,6 @@ static void umbra_is_substruct(DataChunk &args, ExpressionState &state,
   // args.data[i] is a FLAT_VECTOR
   auto &left = args.data[0];
   auto &right = args.data[1];
-  // std::cout << "UMBRA IS SUBSTRUCT CALLED!" << std::endl;
-
-  // cache binary molecules (which come from query smiles -- the
-  // right_umbra_blob) that have been seen so we do not need to regenerate the
-  // DalkeFP because that is costly
-  // std::map<std::string, std::bitset<umbra_mol_t::DALKE_BIT_VECT_SIZE_BITS>>
-  //     seen;
-  //
-  // std::ofstream log_file("log_file.txt",
-  //                        std::ios_base::out | std::ios_base::app);
 
   BinaryExecutor::Execute<string_t, string_t, bool>(
       left, right, result, args.size(),
@@ -322,22 +232,6 @@ static void umbra_is_substruct(DataChunk &args, ExpressionState &state,
         auto left_umbra_mol = umbra_mol_t(left_umbra_blob);
         auto right_umbra_mol = umbra_mol_t(right_umbra_blob);
 
-        // auto it = seen.find(right_umbra_mol.bmol);
-
-        // we have seen this molecule already, just use the stored
-        // dalke fp
-        // if (it != seen.end()) {
-        //   right_umbra_mol.dalke_bitset = it->second;
-        //   log_file << "cache hit" << std::endl;
-        // } else {
-        //   log_file << "cache miss" << std::endl;
-        //   log_file << "rightt umbra mol: "
-        //            << right_umbra_mol.dalke_bitset.to_string() << std::endl;
-        //   right_umbra_mol.GenerateDalkeFP();
-        //   seen.insert(
-        //       std::pair(right_umbra_mol.bmol, right_umbra_mol.dalke_bitset));
-        //   log_file << right_umbra_mol.dalke_bitset.to_string() << std::endl;
-        // }
         return _umbra_is_substruct(left_umbra_mol, right_umbra_mol);
       });
 }
