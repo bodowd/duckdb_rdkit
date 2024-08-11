@@ -1,6 +1,7 @@
 #pragma once
 #include "umbra_mol.hpp"
 #include "common.hpp"
+#include "duckdb/common/exception.hpp"
 #include "mol_formats.hpp"
 #include <GraphMol/SmilesParse/SmilesParse.h>
 #include <GraphMol/Substruct/SubstructMatch.h>
@@ -14,6 +15,10 @@ namespace duckdb_rdkit {
 // bit order
 // "O" 2 times, is bit 0,
 // "O" 3 times is bit 1, etc...
+// This was calculated by Andrew Dalke:
+// http://www.dalkescientific.com/writings/diary/archive/2012/06/11/optimizing_substructure_keys.html
+// And Greg Landrum tested out the 55 bits I use here.
+// https://www.mail-archive.com/rdkit-discuss@lists.sourceforge.net/msg02078.html
 std::vector<std::vector<string>> dalke_counts = {{"O", "2", "3", "1", "4", "5"},
                                                  {"Ccc", "2", "4"},
                                                  {"CCN", "1"},
@@ -70,8 +75,9 @@ uint64_t make_dalke_fp(const RDKit::ROMol &mol) {
 
   uint8_t curBit = 0;
   // for each of the dalke fragments, check if it is found
-  // in the target molecule, the one that an UmbraMol will be constructed for
-  // the dalke fp is the query molecule
+  // in the target molecule (the one that an UmbraMol will be constructed for)
+  // the dalke fragment is the "query" molecule in the SubstructMatch
+  // function
   for (const auto &fp : dalke_counts) {
     std::unique_ptr<RDKit::ROMol> dalke_fp_mol;
 
@@ -79,7 +85,7 @@ uint64_t make_dalke_fp(const RDKit::ROMol &mol) {
       dalke_fp_mol.reset(RDKit::SmilesToMol(fp[0], 0, false));
     } catch (std::exception &e) {
       std::string msg = StringUtil::Format("%s", typeid(e).name());
-      throw FatalException(msg);
+      throw InvalidInputException(msg);
     }
 
     auto matchVect = RDKit::SubstructMatch(mol, *dalke_fp_mol, params);
@@ -96,21 +102,7 @@ uint64_t make_dalke_fp(const RDKit::ROMol &mol) {
   }
   auto k = bs.to_ullong();
   D_ASSERT(curBit == 55);
-  // std::cout << "in make_dalke_fp: " << std::endl;
-  // std::cout << bs.to_string() << std::endl;
-  // std::cout << "uint64_t: " << k << std::endl;
-  // std::cout << "bitset size in hex: " << bs.size() << std::endl;
-  // std::cout << "sizeof bitset: " << sizeof(k) << std::endl;
-  // return bs.to_string();
   return k;
-
-  // for (int i = 63; i >= 0; --i) {
-  //   if (i % 10 == 0) {
-  //     std::cout << " " << std::endl;
-  //   }
-  //   // Print each bit (1 or 0)
-  //   std::cout << ((u >> i) & 1);
-  // }
 }
 
 std::string get_umbra_mol_string(const RDKit::ROMol &mol) {
@@ -138,15 +130,12 @@ std::string get_umbra_mol_string(const RDKit::ROMol &mol) {
   uint32_t num_rings = mol.getRingInfo()->numRings();
 
   uint32_t prefix;
-  // std::cout << "CONSTRUCTOR FOR umbra_mol_t" << std::endl;
-  // std::cout << "NUM_ATOMS IN INPUT: " << num_atoms << std::endl;
-  // std::cout << "NUM_BONDS IN INPUT: " << num_bonds << std::endl;
-  // std::cout << "NUM_RINGS IN INPUT: " << num_rings << std::endl;
-  // std::cout << "AMW IN INPUT: " << amw << std::endl;
 
-  // cap the count if it is larger than the number of bits it supports
-  // number of bits for each count supports the 99 percentile of
-  // values in chembl
+  // Cap the count if it is larger than the number of bits it supports.
+  // The number of bits to use was determined by an analysis of these properties
+  // of molecules in chembl.
+  // The number of bits for each count supports the 99th percentile of
+  // values in chembl.
   if (num_atoms >= 127) {
     num_atoms = 127;
   }
@@ -191,12 +180,8 @@ std::string get_umbra_mol_string(const RDKit::ROMol &mol) {
 
   uint64_t dalke_fp = make_dalke_fp(mol);
 
-  // std::cout << "dalke fp" << std::endl;
-  // std::cout << dalke_fp << std::endl;
-  // std::cout << "in hexadecimal: " << std::endl;
-  // std::cout << std::hex << dalke_fp << std::endl;
-
-  // remember to keep endianess in mind. little endian on my machine
+  // remember to keep endianess in mind if you print things out.
+  // little endian on my machine
   std::string buffer;
   buffer.reserve(total_size);
   buffer.append(reinterpret_cast<const char *>(&prefix),
@@ -204,11 +189,6 @@ std::string get_umbra_mol_string(const RDKit::ROMol &mol) {
   buffer.append(reinterpret_cast<const char *>(&dalke_fp),
                 umbra_mol_t::DALKE_FP_PREFIX_BYTES);
   buffer.append(binary_mol);
-
-  // std::cout << "full umbra mol" << std::endl;
-  // for (char b : buffer) {
-  //   printf("%02x ", static_cast<unsigned char>(b));
-  // }
 
   return buffer;
 }

@@ -12,7 +12,6 @@
 #include <GraphMol/SmilesParse/SmartsWrite.h>
 #include <GraphMol/SmilesParse/SmilesParse.h>
 #include <GraphMol/SmilesParse/SmilesWrite.h>
-#include <cstdint>
 #include <memory>
 #include <sys/types.h>
 
@@ -25,16 +24,14 @@ std::unique_ptr<RDKit::ROMol> rdkit_mol_from_smiles(std::string s) {
     mol.reset(RDKit::SmilesToMol(smiles));
   } catch (std::exception &e) {
     std::string msg = StringUtil::Format("%s", typeid(e).name());
-    // TODO: throw a better exception. Right now, if it's not
-    // a valid SMILES, it will break and then the whole db must be restarted
-    throw FatalException(msg);
+    throw InvalidInputException(msg);
   }
 
   if (mol) {
     return mol;
   } else {
     std::string msg = StringUtil::Format("Could not convert %s to mol", smiles);
-    throw FatalException(msg);
+    throw InvalidInputException(msg);
   }
 }
 
@@ -45,48 +42,10 @@ std::string rdkit_mol_to_binary_mol(const RDKit::ROMol mol) {
     RDKit::MolPickler::pickleMol(mol, buf);
   } catch (...) {
     std::string msg = "Could not serialize mol to binary";
-    throw FatalException(msg);
+    throw InvalidInputException(msg);
   }
   return buf;
 }
-
-// std::string serialize_umbra_mol(umbra_mol_t umbra_mol) {
-//   // encode a prefix and the binary mol into a single std::string
-//   // this can then be handed to the string_t constructor, and then the
-//   // constructor will take care of putting the prefix and the binary molecule
-//   // into the prefix and ptr fields in the `pointer` struct of string_t
-//   std::vector<char> buffer;
-//
-//   buffer.insert(buffer.end(), reinterpret_cast<const char
-//   *>(&umbra_mol.prefix),
-//                 reinterpret_cast<const char *>(&umbra_mol.prefix) +
-//                     sizeof(umbra_mol.prefix));
-//   buffer.insert(buffer.end(), umbra_mol.bmol.begin(), umbra_mol.bmol.end());
-//
-//   return std::string(buffer.begin(), buffer.end());
-// }
-
-// std::string extract_bmol_from_umbra_mol(string_t buffer) {
-//   std::string bmol;
-//
-//   // string_t::GetString() will get the data from the ptr to the string and
-//   // convert it to std::string
-//   auto prefix_size = string_t::PREFIX_BYTES;
-//   // string_t::GetString() will return the prefix and the bmol
-//   // extract just the bmol which is after 4 bytes of prefix
-//   // the total size of the string = prefix + bmol
-//   // so bmol_size = total size - prefix size
-//   auto bmol_size = buffer.GetSize() - string_t::PREFIX_BYTES;
-//   bmol.resize(bmol_size);
-//   std::memcpy(&bmol[0], &buffer.GetString()[prefix_size], bmol_size);
-//
-//   return bmol;
-// }
-
-// uint32_t extract_prefix_from_umbra_mol(string_t buffer) {
-//   uint32_t prefix = Load<uint32_t>(const_data_ptr_cast(buffer.GetPrefix()));
-//   return prefix;
-// }
 
 // Deserialize a binary mol to RDKit mol
 std::unique_ptr<RDKit::ROMol> rdkit_binary_mol_to_mol(std::string bmol) {
@@ -96,7 +55,6 @@ std::unique_ptr<RDKit::ROMol> rdkit_binary_mol_to_mol(std::string bmol) {
   return mol;
 }
 
-// Expects an RDKit pickled molecule and returns the SMILES of the molecule
 std::string rdkit_mol_to_smiles(RDKit::ROMol mol) {
   std::string smiles = RDKit::MolToSmiles(mol);
   return smiles;
@@ -136,13 +94,9 @@ void umbra_mol_from_smiles(DataChunk &args, ExpressionState &state,
           auto mol = rdkit_mol_from_smiles(smiles.GetString());
 
           auto res = get_umbra_mol_string(*mol);
-          // std::cout << "res size: " << res.size() << std::endl;
-          // for (char b : res) {
-          //   printf("%02x ", static_cast<unsigned char>(b));
-          // }
 
           // IMPORTANT! StringVector::AddString needs to take a std::string
-          // Using string_t::GetString() mangles up the data
+          // Using string_t::GetString() seems to mangle the data
           return StringVector::AddStringOrBlob(result, res);
         } catch (...) {
           mask.SetInvalid(idx);
