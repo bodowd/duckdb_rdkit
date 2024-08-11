@@ -44,8 +44,3 @@ SELECT 'C1=CC=CC=C1'::mol;
 c1ccccc1
 
 
-# umbra_mol can be created
-query I
-SELECT umbra_mol_from_smiles('CC');
-----
-CC

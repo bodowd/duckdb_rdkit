@@ -8,6 +8,5 @@
 namespace duckdb_rdkit {
 
 LogicalType Mol();
-LogicalType UmbraMol();
 void RegisterTypes(DatabaseInstance &instance);
 } // namespace duckdb_rdkit

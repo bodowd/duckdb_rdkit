@@ -60,29 +60,22 @@ std::string rdkit_mol_to_smiles(RDKit::ROMol mol) {
   return smiles;
 }
 
-// An extension function callable from duckdb
-// converts a serialized RDKit molecule to SMILES
-//
-// If there is a table mols with a column of type Mol
-//
-//
-// select mol_to_smiles(*) from mols;
-//
 void mol_to_smiles(DataChunk &args, ExpressionState &state, Vector &result) {
   D_ASSERT(args.data.size() == 1);
   auto &bmol = args.data[0];
   auto count = args.size();
 
   UnaryExecutor::Execute<string_t, string_t>(
-      bmol, result, count, [&](string_t bmol) {
-        auto mol = rdkit_binary_mol_to_mol(bmol.GetString());
+      bmol, result, count, [&](string_t b_umbra_mol) {
+        auto umbra_mol = umbra_mol_t(b_umbra_mol);
+        auto bmol = umbra_mol.GetBinaryMol();
+        auto mol = rdkit_binary_mol_to_mol(bmol);
         auto smiles = rdkit_mol_to_smiles(*mol);
         return StringVector::AddString(result, smiles);
       });
 }
 
-void umbra_mol_from_smiles(DataChunk &args, ExpressionState &state,
-                           Vector &result) {
+void mol_from_smiles(DataChunk &args, ExpressionState &state, Vector &result) {
   D_ASSERT(args.data.size() == 1);
   auto &smiles = args.data[0];
   auto count = args.size();
@@ -105,31 +98,6 @@ void umbra_mol_from_smiles(DataChunk &args, ExpressionState &state,
       });
 }
 
-// An extension function callable from duckdb
-// converts a SMILES all the way to the serialized version of the RDKit mol
-// returns NULL if conversion fails
-//
-// select mol_from_smiles('CC');
-//
-void mol_from_smiles(DataChunk &args, ExpressionState &state, Vector &result) {
-  D_ASSERT(args.data.size() == 1);
-  auto &smiles = args.data[0];
-  auto count = args.size();
-
-  UnaryExecutor::ExecuteWithNulls<string_t, string_t>(
-      smiles, result, count,
-      [&](string_t smiles, ValidityMask &mask, idx_t idx) {
-        try {
-          auto mol = rdkit_mol_from_smiles(smiles.GetString());
-          auto pickled_mol = rdkit_mol_to_binary_mol(*mol);
-          return StringVector::AddString(result, pickled_mol);
-        } catch (...) {
-          mask.SetInvalid(idx);
-          return string_t();
-        }
-      });
-}
-
 void RegisterFormatFunctions(DatabaseInstance &instance) {
   // Register scalar functions
   ScalarFunctionSet mol_from_smiles_set("mol_from_smiles");
@@ -141,11 +109,6 @@ void RegisterFormatFunctions(DatabaseInstance &instance) {
   mol_to_smiles_set.AddFunction(ScalarFunction(
       {duckdb_rdkit::Mol()}, LogicalType::VARCHAR, mol_to_smiles));
   ExtensionUtil::RegisterFunction(instance, mol_to_smiles_set);
-
-  ScalarFunctionSet umbra_mol_from_smiles_set("umbra_mol_from_smiles");
-  umbra_mol_from_smiles_set.AddFunction(ScalarFunction(
-      {LogicalType::VARCHAR}, duckdb_rdkit::UmbraMol(), umbra_mol_from_smiles));
-  ExtensionUtil::RegisterFunction(instance, umbra_mol_from_smiles_set);
 }
 
 } // namespace duckdb_rdkit

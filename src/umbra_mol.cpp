@@ -10,15 +10,19 @@
 
 namespace duckdb_rdkit {
 
-// fragments and number of times they appear
-// use a vector to keep the order. The order oof the vector will inform the
-// bit order
+// These are fragments and the number of times they appear in a molecule.
+// Use a vector to keep the order. The order of the vector will inform the
+// bit order.
 // "O" 2 times, is bit 0,
 // "O" 3 times is bit 1, etc...
 // This was calculated by Andrew Dalke:
 // http://www.dalkescientific.com/writings/diary/archive/2012/06/11/optimizing_substructure_keys.html
 // And Greg Landrum tested out the 55 bits I use here.
 // https://www.mail-archive.com/rdkit-discuss@lists.sourceforge.net/msg02078.html
+//
+// This is used for a substructure filter and placed in the prefix of a
+// Umbra-mol so that short-circuiting can take place and save on computation
+// cost when deserializing and a full substructure search is unnecessary.
 std::vector<std::vector<string>> dalke_counts = {{"O", "2", "3", "1", "4", "5"},
                                                  {"Ccc", "2", "4"},
                                                  {"CCN", "1"},
@@ -105,6 +109,9 @@ uint64_t make_dalke_fp(const RDKit::ROMol &mol) {
   return k;
 }
 
+// "Umbra-mol" has more than just the binary molecule
+// There is a prefix in front of the binary molecule, inspired by
+// Umbra-style strings
 std::string get_umbra_mol_string(const RDKit::ROMol &mol) {
   auto binary_mol = rdkit_mol_to_binary_mol(mol);
   size_t total_size = umbra_mol_t::PREFIX_BYTES + binary_mol.size();
