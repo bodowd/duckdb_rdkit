@@ -75,6 +75,14 @@ jobs:
         run: |
           make test
 
+      - uses: actions/upload-artifact@v3
+        with:
+          if-no-files-found: error
+          name: ${{ inputs.extension_name }}-${{ inputs.duckdb_version }}-extension-${{matrix.duckdb_arch}}${{inputs.artifact_postfix}}
+          path: |
+            build/release/extension/${{ inputs.extension_name }}/${{ inputs.extension_name }}.duckdb_extension
+
+
   macos:
     name: MacOS
     if: ${{ vars.RUN_RENAME_TEST == 'true' || github.repository == 'duckdb/extension-template' }}
@@ -128,6 +136,14 @@ jobs:
         run: |
           make test
 
+      - uses: actions/upload-artifact@v3
+        with:
+          if-no-files-found: error
+          name: ${{ inputs.extension_name }}-${{ inputs.duckdb_version }}-extension-${{matrix.duckdb_arch}}${{inputs.artifact_postfix}}
+          path: |
+            build/release/extension/${{ inputs.extension_name }}/${{ inputs.extension_name }}.duckdb_extension
+
+
   windows:
     name: Windows
     if: ${{ vars.RUN_RENAME_TEST == 'true' || github.repository == 'duckdb/extension-template' }}
@@ -176,3 +192,10 @@ jobs:
       - name: Test extension
         run: |
           build/release/test/Release/unittest.exe
+
+      - uses: actions/upload-artifact@v3
+        with:
+          if-no-files-found: error
+          name: ${{ inputs.extension_name }}-${{ inputs.duckdb_version }}-extension-${{matrix.duckdb_arch}}${{inputs.artifact_postfix}}
+          path: |
+            build/release/extension/${{ inputs.extension_name }}/${{ inputs.extension_name }}.duckdb_extension
