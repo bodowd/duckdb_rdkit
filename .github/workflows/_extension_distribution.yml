@@ -284,10 +284,11 @@ jobs:
       # Building & testing
       ###
       - name: Build RDKit
+        shell: bash
         run: | 
-              apt-get install g++ wget make libgl1-mesa-dev mesa-common-dev
+              sudo apt-get install g++ wget make libgl1-mesa-dev mesa-common-dev
               source ${CONDA}/etc/profile.d/conda.sh
-              chown -R ${USER} ${CONDA}
+              sudo chown -R ${USER} ${CONDA}
               conda config --set always_yes yes --set changeps1 no
               conda update -q conda
               conda info -a
