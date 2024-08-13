@@ -397,11 +397,20 @@ jobs:
         run: |
           brew install bison flex
       
-      - name: Build RDKit
+      - name: Build extension
+        shell: bash
+        env:
+          GEN: ninja
+          DUCKDB_PLATFORM: ${{ matrix.duckdb_arch }}
         run: | 
-              apt-get install g++ wget make libgl1-mesa-dev mesa-common-dev
-              source ${CONDA}/etc/profile.d/conda.sh
-              chown -R ${USER} ${CONDA}
+              # need RDKit to build the extension
+              # Easiest way is to install it with conda/mamba
+              curl -fsSLo Miniforge3.sh "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-$(uname -m).sh"
+              bash Miniforge3.sh -b -p "${HOME}/conda"
+              source "${HOME}/conda/etc/profile.d/conda.sh"
+              # For mamba support also run the following command
+              source "${HOME}/conda/etc/profile.d/mamba.sh"              # source ${CONDA}/etc/profile.d/conda.sh
+              # sudo chown -R ${USER} ${CONDA}
               conda config --set always_yes yes --set changeps1 no
               conda update -q conda
               conda info -a
@@ -409,14 +418,8 @@ jobs:
               conda activate rdkit_build
               conda install -c conda-forge mamba
               conda install -c conda-forge mamba
-              mamba install -c conda-forge cmake rdkit eigen 
-
-      - name: Build extension
-        shell: bash
-        env:
-          DUCKDB_PLATFORM: ${{ matrix.duckdb_arch }}
-        run: |
-          make release
+              mamba install -c conda-forge boost-cpp boost cairo pandas pillow freetype cmake numpy eigen matplotlib rdkit
+              make release
 
       - name: Test Extension
         if: ${{ matrix.osx_build_arch == 'x86_64'}}
