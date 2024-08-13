@@ -284,7 +284,7 @@ jobs:
       ###
       # Building & testing
       ###
-      - name: Build RDKit
+      - name: Install RDKit with mamba
         shell: bash
         run: | 
               wget -O Miniforge3.sh "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
@@ -309,6 +309,7 @@ jobs:
           CXX: ${{ matrix.duckdb_arch == 'linux_arm64' && 'aarch64-linux-gnu-g++' || '' }}
           DUCKDB_PLATFORM: ${{ matrix.duckdb_arch }}
         run: |
+          conda activate rdkit_build
           make release
 
       - name: Test extension
