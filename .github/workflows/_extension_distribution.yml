@@ -284,15 +284,11 @@ jobs:
       ###
       # Building & testing
       ###
-      - uses: mamba-org/setup-micromamba@v1
-        with:
-          auto-activate-base: true
-          activate-environment: ""
-          environment-file: starter_conda_env.yml
-
       - name: Build RDKit
         shell: bash
         run: | 
+              curl -L -O "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
+              bash Miniforge3-$(uname)-$(uname -m).sh
               # source ${CONDA}/etc/profile.d/conda.sh
               # sudo chown -R ${USER} ${CONDA}
               conda config --set always_yes yes --set changeps1 no
