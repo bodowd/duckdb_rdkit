@@ -284,9 +284,16 @@ jobs:
       ###
       # Building & testing
       ###
-      - name: Install RDKit with mamba
+      - name: Build extension
         shell: bash
+        env:
+          GEN: ninja
+          CC: ${{ matrix.duckdb_arch == 'linux_arm64' && 'aarch64-linux-gnu-gcc' || '' }}
+          CXX: ${{ matrix.duckdb_arch == 'linux_arm64' && 'aarch64-linux-gnu-g++' || '' }}
+          DUCKDB_PLATFORM: ${{ matrix.duckdb_arch }}
         run: | 
+              # need RDKit to build the extension
+              # Easiest way is to install it with conda/mamba
               wget -O Miniforge3.sh "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
               bash Miniforge3.sh -b -p "${HOME}/conda"
               source "${HOME}/conda/etc/profile.d/conda.sh"
@@ -301,16 +308,8 @@ jobs:
               conda install -c conda-forge mamba
               conda install -c conda-forge mamba
               mamba install -c conda-forge cmake rdkit eigen 
+              make release
       
-      - name: Build extension
-        env:
-          GEN: ninja
-          CC: ${{ matrix.duckdb_arch == 'linux_arm64' && 'aarch64-linux-gnu-gcc' || '' }}
-          CXX: ${{ matrix.duckdb_arch == 'linux_arm64' && 'aarch64-linux-gnu-g++' || '' }}
-          DUCKDB_PLATFORM: ${{ matrix.duckdb_arch }}
-        run: |
-          conda activate rdkit_build
-          make release
 
       - name: Test extension
         if: ${{ matrix.duckdb_arch != 'linux_arm64'}}
