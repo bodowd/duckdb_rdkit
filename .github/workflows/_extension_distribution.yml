@@ -520,7 +520,7 @@ jobs:
           vcpkgGitCommitId: ${{ inputs.vcpkg_commit }}
 
       - name: Build extension
-        shell: bash
+        shell: powershell 
         env:
           GEN: ninja
           DUCKDB_PLATFORM: ${{ matrix.duckdb_arch }}
