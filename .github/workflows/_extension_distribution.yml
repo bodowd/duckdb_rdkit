@@ -307,7 +307,7 @@ jobs:
               conda activate rdkit_build
               conda install -c conda-forge mamba
               conda install -c conda-forge mamba
-              mamba install -c conda-forge boost-cpp boost cairo pandas pillow freetype cmake numpy eigen matplotlib 
+              mamba install -c conda-forge boost-cpp boost cairo pandas pillow freetype cmake numpy eigen matplotlib rdkit
               make release
       
 
