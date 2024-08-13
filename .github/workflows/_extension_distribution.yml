@@ -284,10 +284,11 @@ jobs:
       ###
       # Building & testing
       ###
-      - uses: conda-incubator/setup-miniconda@v3
+      - uses: mamba-org/setup-micromamba@v1
         with:
           auto-activate-base: true
           activate-environment: ""
+          environment-file: starter_conda_env.yml
 
       - name: Build RDKit
         shell: bash
