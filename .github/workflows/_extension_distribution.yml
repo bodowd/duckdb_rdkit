@@ -528,16 +528,16 @@ jobs:
               # need RDKit to build the extension
               # Easiest way is to install it with conda/mamba
               # Download the latest Miniforge installer
-              curl -L -o Miniforge3-Windows-x86_64.exe https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Windows-x86_64.exe
+              Invoke-WebRequest -Uri https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Windows-x86_64.exe -OutFile Miniforge3-Windows-x86_64.exe
               
               # Install Miniforge silently
-              Start-Process -FilePath Miniforge3-Windows-x86_64.exe -ArgumentList '/S /D=C:\Miniforge' -Wait
+              .\Miniforge3-Windows-x86_64.exe /S /InstallationType=JustMe /AddToPath=1 /D=C:\Miniforge
               
-              # Add Miniforge to the system PATH
-              echo "C:\Miniforge" >> $GITHUB_ENV
-              echo "C:\Miniforge\Scripts" >> $GITHUB_ENV
-              echo "C:\Miniforge\Library\bin" >> $GITHUB_ENV
-              echo "C:\Miniforge\condabin" >> $GITHUB_ENV
+              # Add Miniforge to the system PATH (GitHub Actions specific)
+              echo "C:\Miniforge" >> $env:GITHUB_PATH
+              echo "C:\Miniforge\Scripts" >> $env:GITHUB_PATH
+              echo "C:\Miniforge\Library\bin" >> $env:GITHUB_PATH
+              echo "C:\Miniforge\condabin" >> $env:GITHUB_PATH
               # Initialize Conda
               C:\Miniforge\Scripts\conda init bash              
              
