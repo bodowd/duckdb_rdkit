@@ -546,7 +546,11 @@ jobs:
           DUCKDB_PLATFORM: ${{ matrix.duckdb_arch }}
         run: | 
               # Initialize Conda
-              eval "$(C:\Miniforge\Scripts\conda shell.bash hook)"
+              # Convert Windows path to Unix-style path
+              export PATH=/c/Miniforge:/c/Miniforge/Scripts:/c/Miniforge/Library/bin:/c/Miniforge/condabin:$PATH
+              
+              # Initialize Conda for Bash
+              source C:/Miniforge/etc/profile.d/conda.sh
                       
               # Verify installation
               conda --version
