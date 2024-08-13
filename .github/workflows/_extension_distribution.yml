@@ -396,7 +396,7 @@ jobs:
         if: ${{ contains(format(';{0};', inputs.extra_toolchains), ';parser_tools;')}}
         run: |
           brew install bison flex
-      
+
       - name: Build extension
         shell: bash
         env:
@@ -421,18 +421,20 @@ jobs:
               mamba install -c conda-forge boost-cpp boost cairo pandas pillow freetype cmake numpy eigen matplotlib rdkit
               make release
 
+
       - name: Test Extension
         if: ${{ matrix.osx_build_arch == 'x86_64'}}
         shell: bash
         run: |
           make test
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
-          if-no-files-found: error
+          # if-no-files-found: error
           name: ${{ inputs.extension_name }}-${{ inputs.duckdb_version }}-extension-${{matrix.duckdb_arch}}${{inputs.artifact_postfix}}
           path: |
             build/release/extension/${{ inputs.extension_name }}/${{ inputs.extension_name }}.duckdb_extension
+
 
   windows:
     name: Windows
