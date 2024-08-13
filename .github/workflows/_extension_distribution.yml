@@ -285,9 +285,9 @@ jobs:
       ###
       - name: Build RDKit
         run: | 
-              sudo apt-get install g++ wget make libgl1-mesa-dev mesa-common-dev
+              apt-get install g++ wget make libgl1-mesa-dev mesa-common-dev
               source ${CONDA}/etc/profile.d/conda.sh
-              sudo chown -R ${USER} ${CONDA}
+              chown -R ${USER} ${CONDA}
               conda config --set always_yes yes --set changeps1 no
               conda update -q conda
               conda info -a
@@ -394,9 +394,9 @@ jobs:
       
       - name: Build RDKit
         run: | 
-              sudo apt-get install g++ wget make libgl1-mesa-dev mesa-common-dev
+              apt-get install g++ wget make libgl1-mesa-dev mesa-common-dev
               source ${CONDA}/etc/profile.d/conda.sh
-              sudo chown -R ${USER} ${CONDA}
+              chown -R ${USER} ${CONDA}
               conda config --set always_yes yes --set changeps1 no
               conda update -q conda
               conda info -a
@@ -511,9 +511,9 @@ jobs:
 
       - name: Build RDKit
         run: | 
-              sudo apt-get install g++ wget make libgl1-mesa-dev mesa-common-dev
+              apt-get install g++ wget make libgl1-mesa-dev mesa-common-dev
               source ${CONDA}/etc/profile.d/conda.sh
-              sudo chown -R ${USER} ${CONDA}
+              chown -R ${USER} ${CONDA}
               conda config --set always_yes yes --set changeps1 no
               conda update -q conda
               conda info -a
