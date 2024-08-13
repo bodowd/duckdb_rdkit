@@ -519,11 +519,11 @@ jobs:
         with:
           vcpkgGitCommitId: ${{ inputs.vcpkg_commit }}
 
-      - name: Build extension
+      - name: Install Miniforge 
         shell: powershell 
-        env:
-          GEN: ninja
-          DUCKDB_PLATFORM: ${{ matrix.duckdb_arch }}
+        # env:
+        #   GEN: ninja
+        #   DUCKDB_PLATFORM: ${{ matrix.duckdb_arch }}
         run: | 
               # need RDKit to build the extension
               # Easiest way is to install it with conda/mamba
@@ -538,6 +538,13 @@ jobs:
               echo "C:\Miniforge\Scripts" >> $env:GITHUB_PATH
               echo "C:\Miniforge\Library\bin" >> $env:GITHUB_PATH
               echo "C:\Miniforge\condabin" >> $env:GITHUB_PATH
+             
+      - name: Build RDKit and extension
+        shell: bash
+        env:
+          GEN: ninja
+          DUCKDB_PLATFORM: ${{ matrix.duckdb_arch }}
+        run: | 
               # Initialize Conda
               C:\Miniforge\Scripts\conda init bash              
              
