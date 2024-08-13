@@ -2,8 +2,8 @@ name: RDKit.Build.2
 channels:
   - conda-forge
 dependencies:
-  - boost=1.82.0=h37858a2_6
-  - boost-cpp=1.82.0=hca5e981_6
+  - boost=1.84.0
+  - boost-cpp=1.84.0
   - brotli=1.1.0=hb547adb_1
   - brotli-bin=1.1.0=hb547adb_1
   - bzip2=1.0.8=h3422bc3_4
