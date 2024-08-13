@@ -66,6 +66,73 @@ jobs:
           cd duckdb
           git checkout ${{ inputs.duckdb_version }}
 
+
+
+      - id: parse-matrices
+        run: |
+          python3 ${{ inputs.matrix_parse_script }} --input ./duckdb/.github/config/distribution_matrix.json --deploy_matrix --output deploy_matrix.json --exclude "${{ inputs.exclude_archs }}" --pretty
+          deploy_matrix="`cat deploy_matrix.json`"
+          echo deploy_matrix=$deploy_matrix >> $GITHUB_OUTPUT
+          echo `cat $GITHUB_OUTPUT`
+
+  linux:
+    name: Linux
+    if: ${{ vars.RUN_RENAME_TEST == 'true' || github.repository == 'duckdb/extension-template' }}
+    runs-on: ubuntu-latest
+    container: ubuntu:18.04
+    strategy:
+      matrix:
+        # Add commits/tags to build against other DuckDB versions
+        duckdb_version: [ '<submodule_version>' ]
+    env:
+      # VCPKG_TOOLCHAIN_PATH: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
+      # VCPKG_TARGET_TRIPLET: 'x64-linux'
+      GEN: ninja
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Install required ubuntu packages
+        run: |
+          apt-get update -y -qq
+          apt-get install -y -qq software-properties-common
+          add-apt-repository ppa:git-core/ppa
+          apt-get update -y -qq
+          apt-get install -y -qq ninja-build make gcc-multilib g++-multilib libssl-dev wget openjdk-8-jdk zip maven unixodbc-dev libc6-dev-i386 lib32readline6-dev libssl-dev libcurl4-gnutls-dev libexpat1-dev gettext unzip build-essential checkinstall libffi-dev curl libz-dev openssh-client
+
+      - name: Install Git 2.18.5
+        run: |
+          wget https://github.com/git/git/archive/refs/tags/v2.18.5.tar.gz
+          tar xvf v2.18.5.tar.gz
+          cd git-2.18.5
+          make
+          make prefix=/usr install
+          git --version
+
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          submodules: 'true'
+
+      - name: Checkout DuckDB to version
+        if: ${{ matrix.duckdb_version != '<submodule_version>'}}
+        run: |
+          cd duckdb
+          git checkout ${{ matrix.duckdb_version }}
+
+      - uses: ./duckdb/.github/actions/ubuntu_18_setup
+
+      # - name: Setup vcpkg
+      #   uses: lukka/run-vcpkg@v11.1
+      #   with:
+      #     vcpkgGitCommitId: a1a1cbc975abf909a6c8985a6a2b8fe20bbd9bd6
+
+      - name: Rename extension
+        run: |
+          python3 scripts/bootstrap-template.py ext_1_a_123b_b11
+
       - name: Build RDKit
         run: | 
               sudo apt-get install g++ wget make libgl1-mesa-dev mesa-common-dev
@@ -144,14 +211,21 @@ jobs:
       #         cd Docs/Book
       #         make doctest
 
-
-      - id: parse-matrices
+      - name: Build
         run: |
-          python3 ${{ inputs.matrix_parse_script }} --input ./duckdb/.github/config/distribution_matrix.json --deploy_matrix --output deploy_matrix.json --exclude "${{ inputs.exclude_archs }}" --pretty
-          deploy_matrix="`cat deploy_matrix.json`"
-          echo deploy_matrix=$deploy_matrix >> $GITHUB_OUTPUT
-          echo `cat $GITHUB_OUTPUT`
+          make
 
+      - name: Test
+        run: |
+          make test
+
+      - uses: actions/upload-artifact@v3
+        with:
+          if-no-files-found: error
+          name: ${{ inputs.extension_name }}-${{ inputs.duckdb_version }}-extension-${{matrix.duckdb_arch}}${{inputs.artifact_postfix}}
+          path: |
+            build/release/extension/${{ inputs.extension_name }}/${{ inputs.extension_name }}.duckdb_extension
+  
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
