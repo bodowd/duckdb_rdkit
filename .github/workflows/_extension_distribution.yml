@@ -546,9 +546,7 @@ jobs:
           DUCKDB_PLATFORM: ${{ matrix.duckdb_arch }}
         run: | 
               # Initialize Conda
-              # C:\Miniforge\Scripts\conda init bash              
-             
-              source ~/.bashrc
+              eval "$(C:\Miniforge\Scripts\conda shell.bash hook)"
                       
               # Verify installation
               conda --version
