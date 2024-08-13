@@ -170,7 +170,6 @@ jobs:
         if: ${{ matrix.duckdb_arch == 'linux_amd64_gcc4' }}
         run: |
           yum install -y epel-release -y pkgconfig
-          yum install -y g++ wget make libgl1-mesa-dev mesa-common-dev
 
       - name: Install cross compiler for linux_arm64
         shell: bash
