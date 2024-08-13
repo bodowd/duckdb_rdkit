@@ -169,7 +169,7 @@ jobs:
       - name: Install required manylinux packages
         if: ${{ matrix.duckdb_arch == 'linux_amd64_gcc4' }}
         run: |
-          yum install -y epel-release -y pkgconfig
+          yum install -y epel-release -y pkg-config -y wget
 
       - name: Install cross compiler for linux_arm64
         shell: bash
