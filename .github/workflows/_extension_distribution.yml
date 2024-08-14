@@ -298,14 +298,15 @@ jobs:
               bash Miniforge3.sh -b -p "${HOME}/conda"
               source "${HOME}/conda/etc/profile.d/conda.sh"
               # For mamba support also run the following command
-              source "${HOME}/conda/etc/profile.d/mamba.sh"              # source ${CONDA}/etc/profile.d/conda.sh
+              source "${HOME}/conda/etc/profile.d/mamba.sh"              
               # sudo chown -R ${USER} ${CONDA}
               conda config --set always_yes yes --set changeps1 no
               conda update -q conda
               conda info -a
+              # activate the base environment
+              conda activate
               conda create -n rdkit_build
               conda activate rdkit_build
-              conda install -c conda-forge mamba
               conda install -c conda-forge mamba
               mamba install -c conda-forge boost-cpp boost cairo pandas pillow freetype cmake numpy eigen matplotlib rdkit
               make release
