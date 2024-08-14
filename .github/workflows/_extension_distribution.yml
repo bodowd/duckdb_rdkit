@@ -316,6 +316,13 @@ jobs:
         run: |
           make test
 
+      - name: ls dir
+        run: |
+          pwd
+          ls -la build
+          ls -la build/release
+          ls -la build/release/extension
+
       - uses: actions/upload-artifact@v2
         with:
           name: ${{ inputs.extension_name }}-${{ inputs.duckdb_version }}-extension-${{matrix.duckdb_arch}}${{inputs.artifact_postfix}}
@@ -427,6 +434,13 @@ jobs:
         shell: bash
         run: |
           make test
+      
+      - name: ls dir
+        run: |
+          pwd
+          ls -la build
+          ls -la build/release
+          ls -la build/release/extension
 
       - uses: actions/upload-artifact@v3
         with:
