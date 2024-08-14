@@ -147,8 +147,8 @@ jobs:
     strategy:
       matrix: ${{fromJson(needs.generate_matrix.outputs.linux_matrix)}}
     env:
-      VCPKG_TARGET_TRIPLET: ${{ matrix.vcpkg_triplet }}
-      VCPKG_TOOLCHAIN_PATH: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
+      # VCPKG_TARGET_TRIPLET: ${{ matrix.vcpkg_triplet }}
+      # VCPKG_TOOLCHAIN_PATH: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
       GEN: ninja
       BUILD_SHELL: ${{ inputs.build_duckdb_shell && '1' || '0' }}
       DUCKDB_PLATFORM: ${{ matrix.duckdb_arch }}
@@ -307,11 +307,6 @@ jobs:
               conda activate
               conda create -n rdkit_build
               conda activate rdkit_build
-              export RDBASE=`pwd`
-              export PYTHONPATH=${RDBASE}:${PYTHONPATH}
-              export LD_LIBRARY_PATH=${RDBASE}/lib:${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}
-              echo "LD_LIBRARY_PATH: " $LD_LIBRARY_PATH
-              export QT_QPA_PLATFORM='offscreen'
               conda install -c conda-forge mamba
               mamba install -c conda-forge boost-cpp boost cairo pandas pillow freetype cmake numpy eigen matplotlib rdkit
               make release
