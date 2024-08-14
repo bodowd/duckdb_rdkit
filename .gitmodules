@@ -5,3 +5,6 @@
 [submodule "rdkit"]
 	path = rdkit
 	url = https://github.com/rdkit/rdkit.git
+[submodule "extension-ci-tools"]
+	path = extension-ci-tools
+	url = https://github.com/duckdb/extension-ci-tools.git
