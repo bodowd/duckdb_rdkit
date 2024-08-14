@@ -320,7 +320,7 @@ jobs:
         with:
           name: ${{ inputs.extension_name }}-${{ inputs.duckdb_version }}-extension-${{matrix.duckdb_arch}}${{inputs.artifact_postfix}}
           path: |
-            ./duckdb_rdkit/build/release/extension/${{ inputs.extension_name }}/${{ inputs.extension_name }}.duckdb_extension
+            ./build/release/extension/${{ inputs.extension_name }}/${{ inputs.extension_name }}.duckdb_extension
 
   macos:
     name: MacOS
@@ -433,7 +433,7 @@ jobs:
           # if-no-files-found: error
           name: ${{ inputs.extension_name }}-${{ inputs.duckdb_version }}-extension-${{matrix.duckdb_arch}}${{inputs.artifact_postfix}}
           path: |
-            ./duckdb_rdkit/build/release/extension/${{ inputs.extension_name }}/${{ inputs.extension_name }}.duckdb_extension
+            ./build/release/extension/${{ inputs.extension_name }}/${{ inputs.extension_name }}.duckdb_extension
 
 
   windows:
@@ -570,7 +570,7 @@ jobs:
           if-no-files-found: error
           name: ${{ inputs.extension_name }}-${{ inputs.duckdb_version }}-extension-${{matrix.duckdb_arch}}${{inputs.artifact_postfix}}
           path: |
-            ./duckdb_rdkit/build/release/extension/${{ inputs.extension_name }}/${{ inputs.extension_name }}.duckdb_extension
+            ./build/release/extension/${{ inputs.extension_name }}/${{ inputs.extension_name }}.duckdb_extension
 
   wasm:
     name: DuckDB-Wasm
@@ -645,4 +645,4 @@ jobs:
           if-no-files-found: error
           name: ${{ inputs.extension_name }}-${{ inputs.duckdb_version }}-extension-${{matrix.duckdb_arch}}${{inputs.artifact_postfix}}
           path: |
-            ./duckdb_rdkit/build/${{ matrix.duckdb_arch }}/extension/${{ inputs.extension_name }}/${{ inputs.extension_name }}.duckdb_extension.wasm
+            ./build/${{ matrix.duckdb_arch }}/extension/${{ inputs.extension_name }}/${{ inputs.extension_name }}.duckdb_extension.wasm
