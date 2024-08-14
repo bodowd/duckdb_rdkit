@@ -314,9 +314,8 @@ jobs:
       - name: ls dir
         run: |
           pwd
-          ls -la build
-          ls -la build/release
           ls -la build/release/extension
+          ls -la build/release/extension/duckdb_rdkit
       
       - uses: actions/upload-artifact@v2
         with:
@@ -433,9 +432,8 @@ jobs:
       - name: ls dir
         run: |
           pwd
-          ls -la build
-          ls -la build/release
           ls -la build/release/extension
+          ls -la build/release/extension/duckdb_rdkit
 
       - uses: actions/upload-artifact@v3
         with:
