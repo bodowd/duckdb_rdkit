@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_CXX_COMPILER_ID "GNU")
+set(CMAKE_CXX_COMPILER_VERSION "11.4.0")
 # C++17 needs to be specified to compile rdkit
 # see: https://github.com/greglandrum/rdkit_blog/blob/master/src/simple_cxx_example/CMakeLists.txt
 set(CMAKE_CXX_STANDARD 17)
