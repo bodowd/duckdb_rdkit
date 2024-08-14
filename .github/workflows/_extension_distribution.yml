@@ -288,8 +288,8 @@ jobs:
         shell: bash
         env:
           GEN: ninja
-          CC: gcc-11
-          CXX: g++-11
+          CC: gcc
+          CXX: g++
           # CC: ${{ matrix.duckdb_arch == 'linux_arm64' && 'aarch64-linux-gnu-gcc' || '' }}
           # CXX: ${{ matrix.duckdb_arch == 'linux_arm64' && 'aarch64-linux-gnu-g++' || '' }}
           DUCKDB_PLATFORM: ${{ matrix.duckdb_arch }}
