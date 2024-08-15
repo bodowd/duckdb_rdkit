@@ -297,6 +297,7 @@ jobs:
       - name: Install RDKit 
         shell: bash -el {0}
         run: | 
+              conda init
               conda create -n rdkit_build
               conda activate rdkit_build
               conda install -c conda-forge mamba
