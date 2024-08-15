@@ -324,10 +324,9 @@ jobs:
             && apt-get clean \
             && rm -rf /var/lib/apt/lists/*
           
-          mkdir -p /opt/RDKit-build 
-          cd /opt/RDKit-build
 
           git clone https://github.com/rdkit/rdkit.git
+          cd rdkit
           git checkout Release_2023_09_5
           cmake \
             -D RDK_BUILD_CAIRO_SUPPORT=OFF \
