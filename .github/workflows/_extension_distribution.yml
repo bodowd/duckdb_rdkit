@@ -12,6 +12,10 @@ name: Extension distribution
 on:
   workflow_call:
     inputs:
+      boost_dev_version: 
+        required: false
+        type: string
+        default: 1.74
       # The name with which the extension will be built
       extension_name:
         required: true
@@ -284,23 +288,71 @@ jobs:
       ###
       # Building & testing
       ###
-      - uses: conda-incubator/setup-miniconda@v2
-        with:
-          auto-update-conda: true
-          auto-activate-base: true
-          activate-environment: "rdkit_build"
-          miniconda-version: "latest"
-          channels: conda-forge,defaults
+      # - uses: conda-incubator/setup-miniconda@v2
+      #   with:
+      #     auto-update-conda: true
+      #     auto-activate-base: true
+      #     activate-environment: "rdkit_build"
+      #     miniconda-version: "latest"
+      #     channels: conda-forge,defaults
 
-      - name: Install RDKit 
-        shell: bash -el {0}
-        run: | 
-              echo "begin: PATH=$PATH;"     
-              conda create -n rdkit_build
-              # $CONDA/bin/activate rdkit_build
-              conda activate rdkit_build
-              conda install -c conda-forge mamba
-              mamba install -c conda-forge boost-cpp boost cairo pandas pillow freetype cmake numpy eigen matplotlib rdkit-dev
+      # - name: Install RDKit 
+      #   shell: bash -el {0}
+      #   run: | 
+      #         echo "begin: PATH=$PATH;"     
+      #         conda create -n rdkit_build
+      #         # $CONDA/bin/activate rdkit_build
+      #         conda activate rdkit_build
+      #         conda install -c conda-forge mamba
+      #         mamba install -c conda-forge boost-cpp boost cairo pandas pillow freetype cmake numpy eigen matplotlib rdkit-dev
+
+      - name: Build RDKit
+        run: |
+          apt-get update \
+            && apt-get install -yq --no-install-recommends \
+            build-essential \
+            cmake \
+            git \
+            libboost-iostreams${{inputs.boost_dev_version}}-dev \
+            libboost-regex${{inputs.boost_dev_version}}-dev \
+            libboost-serialization${{inputs.boost_dev_version}}-dev \
+            libboost-system${{inputs.boost_dev_version}}-dev \
+            libeigen3-dev \
+            libfreetype6-dev \
+            postgresql-server-dev-all\
+            zlib1g-dev \
+            && apt-get clean \
+            && rm -rf /var/lib/apt/lists/*
+          
+          mkdir -p /opt/RDKit-build 
+          cd /opt/RDKit-build
+
+          git clone https://github.com/rdkit/rdkit.git
+          git checkout Release_2023_09_5
+          cmake \
+            -D RDK_BUILD_CAIRO_SUPPORT=OFF \
+            -D RDK_BUILD_INCHI_SUPPORT=ON \
+            -D RDK_BUILD_AVALON_SUPPORT=ON \
+            -D RDK_BUILD_PYTHON_WRAPPERS=OFF \
+            -D RDK_BUILD_DESCRIPTORS3D=OFF \
+            -D RDK_BUILD_FREESASA_SUPPORT=OFF \
+            -D RDK_BUILD_COORDGEN_SUPPORT=ON \
+            -D RDK_BUILD_MOLINTERCHANGE_SUPPORT=OFF \
+            -D RDK_BUILD_YAEHMOP_SUPPORT=OFF \
+            -D RDK_BUILD_STRUCTCHECKER_SUPPORT=OFF \
+            -D RDK_USE_URF=OFF \
+            -D RDK_BUILD_PGSQL=OFF \
+            -D RDK_PGSQL_STATIC=ON \
+            -D PostgreSQL_CONFIG=pg_config \
+            # -D PostgreSQL_INCLUDE_DIR=`pg_config --includedir` \
+            # -D PostgreSQL_TYPE_INCLUDE_DIR=`pg_config --includedir-server` \
+            # -D PostgreSQL_LIBRARY_DIR=`pg_config --libdir` \
+            -D RDK_INSTALL_INTREE=OFF \
+            -D CMAKE_INSTALL_PREFIX=/opt/RDKit \
+            -D CMAKE_BUILD_TYPE=Release \
+            . 
+          make -j4
+
 
       - name: Build extension
         shell: bash -el {0}
