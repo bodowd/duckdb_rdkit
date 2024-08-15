@@ -291,7 +291,6 @@ jobs:
           activate-environment: "rdkit_build"
           miniconda-version: "latest"
           channels: conda-forge,defaults
-          environment-file: starter_conda_env.yml 
 
       - name: Install RDKit 
         shell: bash -el {0}
@@ -301,7 +300,7 @@ jobs:
               # $CONDA/bin/activate rdkit_build
               conda activate rdkit_build
               conda install -c conda-forge mamba
-              mamba install -c conda-forge boost-cpp boost cairo pandas pillow freetype cmake numpy eigen matplotlib rdkit
+              mamba install -c conda-forge librdkit librdkit-dev rdkit rdkit-dev rdkit-postgresql boost-cpp boost
 
       - name: Build extension
         shell: bash -el {0}
