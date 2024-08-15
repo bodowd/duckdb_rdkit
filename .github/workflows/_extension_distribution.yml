@@ -285,7 +285,7 @@ jobs:
       # Building & testing
       ###
       - name: Install conda 
-        shell: bash
+        shell: bash -el {0}
         run: | 
               # need RDKit to build the extension
               # Easiest way is to install it with conda/mamba
@@ -306,7 +306,7 @@ jobs:
               mamba install -c conda-forge cmake rdkit eigen
 
       - name: Build extension
-        shell: bash
+        shell: bash -el {0}
         env:
           GEN: ninja
           CC: ${{ matrix.duckdb_arch == 'linux_arm64' && 'aarch64-linux-gnu-gcc' || '' }}
