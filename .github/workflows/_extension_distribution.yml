@@ -289,7 +289,7 @@ jobs:
           auto-update-conda: true
           python-version: '3.11' 
           auto-activate-base: true
-          activate-environment: ""
+          activate-environment: true
       
       - name: Install RDKit 
         shell: bash
