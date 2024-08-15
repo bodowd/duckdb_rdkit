@@ -292,6 +292,7 @@ jobs:
           activate-environment: true
           mamba-version: "*" 
           miniconda-version: "latest"
+          channels: conda-forge,defaults
 
       - name: Install RDKit 
         shell: bash
