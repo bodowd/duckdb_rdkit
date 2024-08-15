@@ -295,7 +295,7 @@ jobs:
       - name: Install RDKit 
         shell: bash -el {0}
         run: | 
-             echo "begin: PATH=$PATH;"     
+              echo "begin: PATH=$PATH;"     
               conda create -n rdkit_build
               # $CONDA/bin/activate rdkit_build
               conda activate rdkit_build
@@ -303,7 +303,7 @@ jobs:
               mamba install -c conda-forge cmake rdkit eigen
 
       - name: Build extension
-        shell: bash
+        shell: bash -el {0}
         env:
           GEN: ninja
           CC: ${{ matrix.duckdb_arch == 'linux_arm64' && 'aarch64-linux-gnu-gcc' || '' }}
