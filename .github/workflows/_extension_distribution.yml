@@ -312,7 +312,7 @@ jobs:
           # CXX: ${{ matrix.duckdb_arch == 'linux_arm64' && 'aarch64-linux-gnu-g++' || '' }}
           DUCKDB_PLATFORM: ${{ matrix.duckdb_arch }}
         run: | 
-            sudo apt install gcc-11 g++-11
+            apt install gcc-11 g++-11
             conda activate rdkit_build   
             conda list
             make release
