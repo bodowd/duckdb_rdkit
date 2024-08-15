@@ -311,6 +311,7 @@ jobs:
           DUCKDB_PLATFORM: ${{ matrix.duckdb_arch }}
         run: | 
             conda activate rdkit_build   
+            conda list
             make release
       
 
