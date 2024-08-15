@@ -306,13 +306,11 @@ jobs:
         shell: bash -el {0}
         env:
           GEN: ninja
-          CC: gcc-11
-          CXX: g++-11
           # CC: ${{ matrix.duckdb_arch == 'linux_arm64' && 'aarch64-linux-gnu-gcc' || '' }}
           # CXX: ${{ matrix.duckdb_arch == 'linux_arm64' && 'aarch64-linux-gnu-g++' || '' }}
           DUCKDB_PLATFORM: ${{ matrix.duckdb_arch }}
         run: | 
-            apt install gcc-11 g++-11
+            g++ --version
             conda activate rdkit_build   
             conda list
             make release
