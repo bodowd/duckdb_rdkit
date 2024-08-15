@@ -15,7 +15,7 @@ on:
       boost_dev_version: 
         required: false
         type: string
-        default: 1.74
+        default: 1.84
       # The name with which the extension will be built
       extension_name:
         required: true
