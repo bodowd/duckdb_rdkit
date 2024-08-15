@@ -290,7 +290,8 @@ jobs:
           python-version: '3.11' 
           auto-activate-base: true
           activate-environment: true
-      
+          mamba-version: "*" 
+
       - name: Install RDKit 
         shell: bash
         run: | 
