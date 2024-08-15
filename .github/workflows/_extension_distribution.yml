@@ -141,7 +141,7 @@ jobs:
   linux:
     name: Linux
     runs-on: ubuntu-latest 
-    container: ubuntu:22.04
+    container: ${{ matrix.container }}
     needs: generate_matrix
     if: ${{ needs.generate_matrix.outputs.linux_matrix != '{}' && needs.generate_matrix.outputs.linux_matrix != '' }}
     strategy:
@@ -291,6 +291,7 @@ jobs:
           activate-environment: "rdkit_build"
           miniconda-version: "latest"
           channels: conda-forge,defaults
+          environment-file: starter_conda_env.yml 
 
       - name: Install RDKit 
         shell: bash -el {0}
