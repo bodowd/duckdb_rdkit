@@ -287,19 +287,18 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v2
         with:
           auto-update-conda: true
-          python-version: '3.11' 
           auto-activate-base: true
-          activate-environment: true
-          mamba-version: "*" 
+          activate-environment: "rdkit_build"
           miniconda-version: "latest"
           channels: conda-forge,defaults
 
       - name: Install RDKit 
         shell: bash -el {0}
         run: | 
+             echo "begin: PATH=$PATH;"     
               conda create -n rdkit_build
-              $CONDA/bin/activate rdkit_build
-              # conda activate 
+              # $CONDA/bin/activate rdkit_build
+              conda activate rdkit_build
               conda install -c conda-forge mamba
               mamba install -c conda-forge cmake rdkit eigen
 
