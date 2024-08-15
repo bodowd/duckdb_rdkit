@@ -291,6 +291,7 @@ jobs:
           auto-activate-base: true
           activate-environment: true
           mamba-version: "*" 
+          miniconda-version: "latest"
 
       - name: Install RDKit 
         shell: bash
