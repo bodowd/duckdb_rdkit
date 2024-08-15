@@ -284,15 +284,8 @@ jobs:
       ###
       # Building & testing
       ###
-      - name: Build extension
+      - name: Install conda 
         shell: bash
-        env:
-          GEN: ninja
-          CC: gcc-11
-          CXX: g++-11
-          # CC: ${{ matrix.duckdb_arch == 'linux_arm64' && 'aarch64-linux-gnu-gcc' || '' }}
-          # CXX: ${{ matrix.duckdb_arch == 'linux_arm64' && 'aarch64-linux-gnu-g++' || '' }}
-          DUCKDB_PLATFORM: ${{ matrix.duckdb_arch }}
         run: | 
               # need RDKit to build the extension
               # Easiest way is to install it with conda/mamba
@@ -310,8 +303,18 @@ jobs:
               conda create -n rdkit_build
               conda activate rdkit_build
               conda install -c conda-forge mamba
-              mamba install -c conda-forge boost-cpp boost cairo pandas pillow freetype cmake numpy eigen matplotlib rdkit
-              make release
+              mamba install -c conda-forge cmake rdkit eigen
+
+      - name: Build extension
+        shell: bash
+        env:
+          GEN: ninja
+          CC: ${{ matrix.duckdb_arch == 'linux_arm64' && 'aarch64-linux-gnu-gcc' || '' }}
+          CXX: ${{ matrix.duckdb_arch == 'linux_arm64' && 'aarch64-linux-gnu-g++' || '' }}
+          DUCKDB_PLATFORM: ${{ matrix.duckdb_arch }}
+        run: | 
+            conda activate rdkit_build   
+            make release
       
 
       - name: ls dir
