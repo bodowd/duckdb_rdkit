@@ -344,7 +344,6 @@ jobs:
         run: | 
               echo "begin: PATH=$PATH;"     
               conda create -n rdkit_build
-              # $CONDA/bin/activate rdkit_build
               conda activate rdkit_build
               conda install -c conda-forge mamba
               mamba install -c conda-forge boost-cpp boost cairo pandas pillow freetype cmake numpy eigen matplotlib rdkit-dev
@@ -357,11 +356,8 @@ jobs:
           CXX: ${{ matrix.duckdb_arch == 'linux_arm64' && 'aarch64-linux-gnu-g++' || '' }}
           DUCKDB_PLATFORM: ${{ matrix.duckdb_arch }}
         run: | 
-            # dpkg --list | grep compiler
-            # g++ --version
             conda activate rdkit_build   
             conda info --envs
-            # conda list
             echo "CMAKE_PREFIX_PATH=$CONDA_PREFIX:$CMAKE_PREFIX_PATH" >> $GITHUB_ENV
             make release
       
