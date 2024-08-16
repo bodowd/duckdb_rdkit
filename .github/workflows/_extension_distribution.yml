@@ -168,7 +168,7 @@ jobs:
           apt-get update -y -qq
           apt-get install -y -qq software-properties-common
           apt-get install -y -qq --fix-missing ninja-build make gcc-multilib g++-multilib libssl-dev wget openjdk-8-jdk zip maven unixodbc-dev libc6-dev-i386 lib32readline6-dev libssl-dev libcurl4-gnutls-dev libexpat1-dev gettext unzip build-essential checkinstall libffi-dev curl libz-dev openssh-client pkg-config
-          apt-get install -y g++ wget make libgl1-mesa-dev mesa-common-dev cmake
+          apt-get install -y g++ wget make libgl1-mesa-dev mesa-common-dev 
 
       - name: Install required manylinux packages
         if: ${{ matrix.duckdb_arch == 'linux_amd64_gcc4' }}
@@ -207,14 +207,14 @@ jobs:
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y 
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
-      # - name: Install CMake 3.21
-      #   if: ${{ matrix.duckdb_arch == 'linux_amd64' || matrix.duckdb_arch == 'linux_arm64' }}
-      #   shell: bash
-      #   run: |
-      #     wget https://github.com/Kitware/CMake/releases/download/v3.21.3/cmake-3.21.3-linux-x86_64.sh
-      #     chmod +x cmake-3.21.3-linux-x86_64.sh
-      #     ./cmake-3.21.3-linux-x86_64.sh --skip-license --prefix=/usr/local
-      #     cmake --version
+      - name: Install CMake 3.21
+        if: ${{ matrix.duckdb_arch == 'linux_amd64' || matrix.duckdb_arch == 'linux_arm64' }}
+        shell: bash
+        run: |
+          wget https://github.com/Kitware/CMake/releases/download/v3.21.3/cmake-3.21.3-linux-x86_64.sh
+          chmod +x cmake-3.21.3-linux-x86_64.sh
+          ./cmake-3.21.3-linux-x86_64.sh --skip-license --prefix=/usr/local
+          cmake --version
 
       - name: Install parser tools
         if: ${{ contains(format(';{0};', inputs.extra_toolchains), ';parser_tools;') && (matrix.duckdb_arch == 'linux_amd64' || matrix.duckdb_arch == 'linux_arm64') }}
@@ -311,7 +311,6 @@ jobs:
           apt-get update \
             && apt-get install -yq --no-install-recommends \
             build-essential \
-            cmake \
             git \
             libboost-iostreams${{inputs.boost_dev_version}}-dev \
             libboost-regex${{inputs.boost_dev_version}}-dev \
@@ -361,6 +360,7 @@ jobs:
             dpkg --list | grep compiler
             g++ --version
             conda activate rdkit_build   
+            conda info --envs
             conda list
             make release
       
