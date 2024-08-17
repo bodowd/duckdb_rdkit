@@ -28,7 +28,7 @@ on:
       exclude_archs:
         required: false
         type: string
-        default: "linux_amd64_gcc4; linux_arm64"
+        default: "linux_amd64_gcc4;linux_arm64"
       # Postfix added to artifact names. Can be used to guarantee unique names when this workflow is called multiple times
       artifact_postfix:
         required: false
