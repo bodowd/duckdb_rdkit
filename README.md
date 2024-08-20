@@ -26,7 +26,64 @@ This extension, duckdb_rdkit, allows you to use RDKit functionality within DuckD
 
 ## Building
 
-### Install RDKit
+### Building RDKit with static libraries on Linux
+
+Create a conda environment:
+
+```shell
+# not sure if all of these are needed, like py-boost
+conda create -n rdkit_dev -c conda-forge -y boost-cpp boost cmake cairo eigen libboost py-boost
+```
+
+Clone RDKit:
+
+```shell
+git clone https://github.com/rdkit/rdkit.git
+```
+
+Build and install RDKit:
+
+```shell
+cd rdkit
+mkdir build
+cd build
+RUN cmake .. \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DRDK_INSTALL_INTREE=ON \
+  -DRDK_BUILD_PYTHON_WRAPPERS=OFF\
+  -DRDK_BUILD_FUZZ_TARGETS=OFF \
+  -DRDK_INSTALL_STATIC_LIBS=ON \
+  -DBoost_USE_STATIC_LIBS=ON \
+  -DRDK_BUILD_CPP_TESTS=OFF \
+  -DBoost_NO_SYSTEM_PATHS=ON \
+  -DCMAKE_INCLUDE_PATH="${CONDA_PREFIX}/include" \
+  -DCMAKE_LIBRARY_PATH="${CONDA_PREFIX}/lib" \
+  -DCMAKE_PREFIX_PATH=$CONDA_PREFIX
+
+make install
+```
+
+After building RDKit, should be able to find static libraries:
+
+```shell
+find . -type f -name "*.a"
+```
+
+returns for example:
+
+```shell
+./Code/ChemicalFeatures/libRDKitChemicalFeatures_static.a
+./Code/DataStructs/libRDKitDataStructs_static.a
+./Code/GraphMol/MolHash/libRDKitMolHash_static.a
+./Code/GraphMol/MolCatalog/libRDKitMolCatalog_static.a
+./Code/GraphMol/FilterCatalog/libRDKitFilterCatalog_static.a
+./Code/GraphMol/MolChemicalFeatures/libRDKitMolChemicalFeatures_static.a
+...
+```
+
+### Building duckdb with RDKit extension
+
+#### Install RDKit
 
 The instructions are derived from this post on the RDKit [blog].
 
