@@ -81,7 +81,52 @@ returns for example:
 ...
 ```
 
-### Building duckdb with RDKit extension
+### Building duckdb with RDKit extension dynamic linking
+
+Tried building in the host in conda env (which has the RDKit shared objects
+in ~/miniforge3/envs/rdkit_dev/lib) then running it in the docker conda, which has
+the RDKit shared objects in /opt/conda/envs/rdkit_dev/lib.
+
+```docker
+FROM continuumio/miniconda3
+RUN conda install -c conda-forge mamba && \
+  conda create -n rdkit_dev -c conda-forge -y boost-cpp boost cmake rdkit=2023.09.4 eigen
+```
+
+Then build the container:
+
+```shell
+docker build -t duckdb_rdkit_image .
+```
+
+In the host, I activated the conda env there and built duckdb with extension.
+
+Then run the docker container:
+
+```shell
+docker run -it --rm --name=duckdb_rdkit_image --mount type=bind,source=${PWD},target=/src duckdb_rdkit_image bash
+```
+
+In the container set LD_LIBRARY_PATH to the shared libraries. The container
+has a different $CONDA_PREFIX
+
+```shell
+export LD_LIBRARY_PATH=$CONDA_PREFIX/envs/rdkit_dev/lib:$LD_LIBRARY_PATH
+```
+
+Then run duckdb:
+
+```shell
+cd src
+./build/release/duckdb
+```
+
+The extension then should be working with `select mol_from_smiles('C')`
+
+TODO: try again the other way around. Build in the container, then run
+in the host
+
+### Building duckdb with RDKit extension static linking
 
 #### Install RDKit
 
@@ -101,7 +146,7 @@ that env.
 
 [blog]: https://greglandrum.github.io/rdkit-blog/posts/2021-07-24-setting-up-a-cxx-dev-env.html
 
-### Build steps
+#### Build duckdb with RDKit extension steps
 
 To build the extension, run:
 
