@@ -334,7 +334,6 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v2
         with:
           auto-update-conda: true
-          auto-activate-base: true
           activate-environment: "rdkit_build"
           miniconda-version: "latest"
           channels: conda-forge,defaults
@@ -343,10 +342,7 @@ jobs:
         shell: bash -el {0}
         run: | 
               echo "begin: PATH=$PATH;"     
-              conda create -n rdkit_build
-              conda activate rdkit_build
-              conda install -c conda-forge mamba
-              mamba install -c conda-forge boost-cpp boost cairo pandas pillow freetype cmake numpy eigen matplotlib rdkit=2023.09.4
+              conda install -c conda-forge -y boost-cpp boost cmake rdkit eigen librdkit-dev
 
       - name: Build extension
         shell: bash -el {0}
@@ -360,7 +356,6 @@ jobs:
             conda info --envs
             echo "CMAKE_PREFIX_PATH=$CONDA_PREFIX:$CMAKE_PREFIX_PATH" >> $GITHUB_ENV
             make release
-      
 
       - name: ls dir
         run: |
