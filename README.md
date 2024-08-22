@@ -83,9 +83,13 @@ returns for example:
 
 ### Building duckdb with RDKit extension dynamic linking
 
+#### Building in host and running in container
+
 Tried building in the host in conda env (which has the RDKit shared objects
 in ~/miniforge3/envs/rdkit_dev/lib) then running it in the docker conda, which has
 the RDKit shared objects in /opt/conda/envs/rdkit_dev/lib.
+
+Build on host with `GEN=ninja make`
 
 ```docker
 FROM continuumio/miniconda3
@@ -111,7 +115,7 @@ In the container set LD_LIBRARY_PATH to the shared libraries. The container
 has a different $CONDA_PREFIX
 
 ```shell
-export LD_LIBRARY_PATH=$CONDA_PREFIX/envs/rdkit_dev/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
 ```
 
 Then run duckdb:
@@ -121,10 +125,77 @@ cd src
 ./build/release/duckdb
 ```
 
-The extension then should be working with `select mol_from_smiles('C')`
+#### Building in container and running on host
 
-TODO: try again the other way around. Build in the container, then run
-in the host
+Important: the latest rdkit puts headers and shared libraries in different
+places than a version like 2023.09.04 for example. So it may be necessary
+to make sure the same version of rdkit is on the client as the building container.
+Otherwise, the duckdb extension won't be able to find the shared libraries
+
+Build the container:
+
+```shell
+docker build -t duckdb_rdkit_image .
+```
+
+Run the container and build duckdb
+
+```shell
+docker run -it --rm --name=duckdb_rdkit_image --mount type=bind,source=${PWD},target=/root/src duckdb_rdkit_image bash
+cd ~/src
+GEN=ninja make
+```
+
+On the host:
+
+Point to the shared libraries
+
+```shell
+export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
+```
+
+Run duckdb
+
+```shell
+./build/release/duckdb
+```
+
+Can also just point the duckdb to the extension file.
+Need to run in a conda env with RDKit and point to the shared objects
+
+```shell
+export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
+
+```
+
+```shell
+./build/release/duckdb -unsigned
+```
+
+In duckdb:
+
+```sql
+LOAD 'path/to/.duckdb_extension'
+```
+
+Then we have the duckdb_rdkit functions
+
+#### Running in python client:
+
+Need to have conda env with rdkit installed
+
+```shell
+export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
+```
+
+```python
+import duckdb
+con = duckdb.connect(config = {"allow_unsigned_extensions": "true"})
+con.install_extension('/path/to/duckdb_rdkit.duckdb_extension')
+con.load_extension('/path/to/duckdb_rdkit.duckdb_extension')
+con.sql("SELECT mol_from_smiles('C')")
+
+```
 
 ### Building duckdb with RDKit extension static linking
 
@@ -222,4 +293,8 @@ After running these steps, you can install and load your extension using the reg
 ```sql
 INSTALL duckdb_rdkit
 LOAD duckdb_rdkit
+```
+
+```
+
 ```
