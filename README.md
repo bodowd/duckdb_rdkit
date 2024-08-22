@@ -197,8 +197,6 @@ con.sql("SELECT mol_from_smiles('C')")
 
 ```
 
-### Building duckdb with RDKit extension static linking
-
 #### Install RDKit
 
 The instructions are derived from this post on the RDKit [blog].
