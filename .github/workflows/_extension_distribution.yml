@@ -145,7 +145,7 @@ jobs:
   linux:
     name: Linux
     runs-on: ubuntu-latest 
-    container: ${{ matrix.container }}
+    container: ubuntu:22.04
     needs: generate_matrix
     if: ${{ needs.generate_matrix.outputs.linux_matrix != '{}' && needs.generate_matrix.outputs.linux_matrix != '' }}
     strategy:
@@ -288,49 +288,6 @@ jobs:
       ###
       # Building & testing
       ###
-
-      # - name: Build RDKit
-      #   run: |
-      #     apt-get update \
-      #       && apt-get install -yq --no-install-recommends \
-      #       build-essential \
-      #       git \
-      #       libboost-iostreams${{inputs.boost_dev_version}}-dev \
-      #       libboost-regex${{inputs.boost_dev_version}}-dev \
-      #       libboost-serialization${{inputs.boost_dev_version}}-dev \
-      #       libboost-system${{inputs.boost_dev_version}}-dev \
-      #       libeigen3-dev \
-      #       libfreetype6-dev \
-      #       postgresql-server-dev-all\
-      #       zlib1g-dev \
-      #       && apt-get clean \
-      #       && rm -rf /var/lib/apt/lists/*
-      #     
-      #     mkdir -p /opt/RDKit-build
-      #     cd /opt/RDKit-build
-      #     git clone https://github.com/rdkit/rdkit.git
-      #     cd rdkit
-      #     git checkout Release_2023_09_5
-      #     cmake \
-      #       -D RDK_BUILD_CAIRO_SUPPORT=OFF \
-      #       -D RDK_BUILD_INCHI_SUPPORT=ON \
-      #       -D RDK_BUILD_AVALON_SUPPORT=ON \
-      #       -D RDK_BUILD_PYTHON_WRAPPERS=OFF \
-      #       -D RDK_BUILD_DESCRIPTORS3D=OFF \
-      #       -D RDK_BUILD_FREESASA_SUPPORT=OFF \
-      #       -D RDK_BUILD_COORDGEN_SUPPORT=ON \
-      #       -D RDK_BUILD_MOLINTERCHANGE_SUPPORT=OFF \
-      #       -D RDK_BUILD_YAEHMOP_SUPPORT=OFF \
-      #       -D RDK_BUILD_STRUCTCHECKER_SUPPORT=OFF \
-      #       -D RDK_USE_URF=OFF \
-      #       -D RDK_BUILD_PGSQL=OFF \
-      #       -D RDK_PGSQL_STATIC=OFF \
-      #       -D RDK_INSTALL_INTREE=OFF \
-      #       -D CMAKE_INSTALL_PREFIX=/opt/RDKit \
-      #       -D CMAKE_BUILD_TYPE=Release \
-      #       . 
-      #     make -j4
-
       - uses: conda-incubator/setup-miniconda@v2
         with:
           auto-update-conda: true
