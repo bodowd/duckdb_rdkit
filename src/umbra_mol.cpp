@@ -136,7 +136,9 @@ std::string get_umbra_mol_string(const RDKit::ROMol &mol) {
   uint32_t amw = RDKit::Descriptors::calcAMW(mol);
   uint32_t num_rings = mol.getRingInfo()->numRings();
 
-  uint32_t prefix;
+  // initialize with zero otherwise prefix will have data from
+  // previous calls of this function
+  uint32_t prefix = 0;
 
   // Cap the count if it is larger than the number of bits it supports.
   // The number of bits to use was determined by an analysis of these properties
