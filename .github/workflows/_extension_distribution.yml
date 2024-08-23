@@ -314,12 +314,6 @@ jobs:
             echo "CMAKE_PREFIX_PATH=$CONDA_PREFIX:$CMAKE_PREFIX_PATH" >> $GITHUB_ENV
             make release
 
-      - name: ls dir
-        run: |
-          pwd
-          ls -la build/release/extension
-          ls -la build/release/extension/duckdb_rdkit
-      
       - uses: actions/upload-artifact@v2
         with:
           name: ${{ inputs.extension_name }}-${{ inputs.duckdb_version }}-extension-${{matrix.duckdb_arch}}${{inputs.artifact_postfix}}
