@@ -28,7 +28,7 @@ on:
       exclude_archs:
         required: false
         type: string
-        default: "linux_amd64_gcc4;linux_arm64;osx_arm64"
+        default: "linux_amd64_gcc4;linux_arm64"
       # Postfix added to artifact names. Can be used to guarantee unique names when this workflow is called multiple times
       artifact_postfix:
         required: false
@@ -329,7 +329,7 @@ jobs:
 
   macos:
     name: MacOS
-    runs-on: macos-latest
+    runs-on: macos-14
     needs: generate_matrix
     if: ${{ needs.generate_matrix.outputs.osx_matrix != '{}' && needs.generate_matrix.outputs.osx_matrix != '' }}
     strategy:
