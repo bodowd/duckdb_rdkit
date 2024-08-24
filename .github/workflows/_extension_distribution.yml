@@ -405,6 +405,7 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
+          architecture: "osx-64"
           activate-environment: "rdkit_build"
           miniconda-version: "latest"
           channels: conda-forge,defaults
@@ -413,7 +414,6 @@ jobs:
         shell: bash -el {0}
         run: | 
               echo "begin: PATH=$PATH;"     
-              conda config --env --set subdir osx-64
               conda install -c conda-forge -y boost-cpp boost cmake rdkit eigen librdkit-dev
 
       - name: Build extension
