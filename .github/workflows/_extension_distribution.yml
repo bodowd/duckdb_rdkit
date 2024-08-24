@@ -314,16 +314,17 @@ jobs:
             echo "CMAKE_PREFIX_PATH=$CONDA_PREFIX:$CMAKE_PREFIX_PATH" >> $GITHUB_ENV
             make release
 
+      - name: Test extension
+        if: ${{ matrix.duckdb_arch != 'linux_arm64'}}
+        run: |
+          make test
+
       - uses: actions/upload-artifact@v2
         with:
           name: ${{ inputs.extension_name }}-${{ inputs.duckdb_version }}-extension-${{matrix.duckdb_arch}}${{inputs.artifact_postfix}}
           path: |
             build/release/extension/${{ inputs.extension_name }}/${{ inputs.extension_name }}.duckdb_extension
 
-      - name: Test extension
-        if: ${{ matrix.duckdb_arch != 'linux_arm64'}}
-        run: |
-          make test
 
 
 
