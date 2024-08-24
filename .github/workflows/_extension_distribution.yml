@@ -359,9 +359,9 @@ jobs:
           fetch-depth: 0
           submodules: 'true'
 
-      - name: Install Ninja
+      - name: Install Cmake & Ninja
         run: |
-          brew install ninja
+          brew install cmake ninja
 
       - name: Setup Ccache
         uses: hendrikmuhs/ccache-action@main
@@ -413,6 +413,7 @@ jobs:
         shell: bash -el {0}
         run: | 
               echo "begin: PATH=$PATH;"     
+              conda config --env --set subdir osx-64
               conda install -c conda-forge -y boost-cpp boost cmake rdkit eigen librdkit-dev
 
       - name: Build extension
