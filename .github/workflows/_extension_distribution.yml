@@ -319,12 +319,15 @@ jobs:
         run: |
           make test
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
+        id: artifact-upload
         with:
           name: ${{ inputs.extension_name }}-${{ inputs.duckdb_version }}-extension-${{matrix.duckdb_arch}}${{inputs.artifact_postfix}}
           path: |
             build/release/extension/${{ inputs.extension_name }}/${{ inputs.extension_name }}.duckdb_extension
 
+      - name: Output artifact URL
+        run:  echo 'Artifact URL is ${{ steps.artifact-upload.outputs.artifact-url }}'
 
 
 
@@ -439,14 +442,16 @@ jobs:
         run: |
           make test
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
+        id: artifact-upload
         with:
           name: ${{ inputs.extension_name }}-${{ inputs.duckdb_version }}-extension-${{matrix.duckdb_arch}}${{inputs.artifact_postfix}}
           path: |
             build/release/extension/${{ inputs.extension_name }}/${{ inputs.extension_name }}.duckdb_extension
 
 
-
+      - name: Output artifact URL
+        run:  echo 'Artifact URL is ${{ steps.artifact-upload.outputs.artifact-url }}'
 
 
       
