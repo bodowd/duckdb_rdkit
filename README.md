@@ -17,7 +17,8 @@ This extension, duckdb_rdkit, allows you to use RDKit functionality within DuckD
 
 ### Searches
 
-- is_exact_match(mol1, mol2) : exact structure search. Returns boolean
+- is_exact_match(mol1, mol2) : exact structure search. Returns true if the two molecules are the same. (Chirality sensitive search is not on)
+- is_substruct(mol1, mol2)): returns true if mol2 is a substructure of mol1.
 
 ### Molecule conversion functions
 
@@ -26,224 +27,106 @@ This extension, duckdb_rdkit, allows you to use RDKit functionality within DuckD
 
 ## Building
 
-### Building RDKit with static libraries on Linux
+### Building duckdb with RDKit extension
 
-Create a conda environment:
+To build the extension, you need to have RDKit installed. The easiest way
+to install RDKit is with conda. I used miniforge to install things: https://github.com/conda-forge/miniforge
 
-```shell
-# not sure if all of these are needed, like py-boost
-conda create -n rdkit_dev -c conda-forge -y boost-cpp boost cmake cairo eigen libboost py-boost
-```
-
-Clone RDKit:
+After installing it and having conda working, you can create a new
+conda environment and then install the packages needed. The instructions are derived from this post on the RDKit [blog].
+As of August 2024, I am using this command to install the libraries needed:
 
 ```shell
-git clone https://github.com/rdkit/rdkit.git
+# activate your conda env and then in your conda env run:
+conda install -c conda-forge -y boost-cpp boost cmake rdkit eigen librdkit-dev
 ```
 
-Build and install RDKit:
+(librdkit-dev seems to have the relevant header files)
+
+You can visit https://duckdb.org/docs/dev/building/overview.html
+to find more information on how to build duckdb from source.
+
+After installing the prerequisite software, you can run `GEN=ninja make`.
+This will compile duckdb and the extension and you will find it in
+the `build` folder.
+
+### Running in the CLI
+
+You can either run the duckdb executable you compiled found in
+`build/release` and that will have the duckdb_rdkit extension already
+installed and loaded, or you can run a different duckdb executable, and then
+point that to the the duckdb_rdkit extension file.
+
+If you want to run a different executable that you installed and then load in
+the duckdb_rdkit extension, you can do the following:
+
+Run duckdb with the `unsigned` flag on to run unsigned extensions.
+More information here: https://duckdb.org/docs/extensions/overview.html#unsigned-extensions
 
 ```shell
-cd rdkit
-mkdir build
-cd build
-RUN cmake .. \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DRDK_INSTALL_INTREE=ON \
-  -DRDK_BUILD_PYTHON_WRAPPERS=OFF\
-  -DRDK_BUILD_FUZZ_TARGETS=OFF \
-  -DRDK_INSTALL_STATIC_LIBS=ON \
-  -DBoost_USE_STATIC_LIBS=ON \
-  -DRDK_BUILD_CPP_TESTS=OFF \
-  -DBoost_NO_SYSTEM_PATHS=ON \
-  -DCMAKE_INCLUDE_PATH="${CONDA_PREFIX}/include" \
-  -DCMAKE_LIBRARY_PATH="${CONDA_PREFIX}/lib" \
-  -DCMAKE_PREFIX_PATH=$CONDA_PREFIX
-
-make install
+duckdb -unsigned
 ```
 
-After building RDKit, should be able to find static libraries:
+Then load the extension with the path to the duckdb_extension file:
 
 ```shell
-find . -type f -name "*.a"
+LOAD 'path/to/duckdb_rdkit.duckdb_extension'
 ```
 
-returns for example:
+Now try
 
 ```shell
-./Code/ChemicalFeatures/libRDKitChemicalFeatures_static.a
-./Code/DataStructs/libRDKitDataStructs_static.a
-./Code/GraphMol/MolHash/libRDKitMolHash_static.a
-./Code/GraphMol/MolCatalog/libRDKitMolCatalog_static.a
-./Code/GraphMol/FilterCatalog/libRDKitFilterCatalog_static.a
-./Code/GraphMol/MolChemicalFeatures/libRDKitMolChemicalFeatures_static.a
-...
+# should return true
+SELECT is_exact_match('C', 'C');
+
+# should return false
+SELECT is_exact_match('C', 'CO');
 ```
-
-### Building duckdb with RDKit extension dynamic linking
-
-#### Building in host and running in container
-
-Tried building in the host in conda env (which has the RDKit shared objects
-in ~/miniforge3/envs/rdkit_dev/lib) then running it in the docker conda, which has
-the RDKit shared objects in /opt/conda/envs/rdkit_dev/lib.
-
-Build on host with `GEN=ninja make`
-
-```docker
-FROM continuumio/miniconda3
-RUN conda install -c conda-forge mamba && \
-  conda create -n rdkit_dev -c conda-forge -y boost-cpp boost cmake rdkit=2023.09.4 eigen
-```
-
-Then build the container:
-
-```shell
-docker build -t duckdb_rdkit_image .
-```
-
-In the host, I activated the conda env there and built duckdb with extension.
-
-Then run the docker container:
-
-```shell
-docker run -it --rm --name=duckdb_rdkit_image --mount type=bind,source=${PWD},target=/src duckdb_rdkit_image bash
-```
-
-In the container set LD_LIBRARY_PATH to the shared libraries. The container
-has a different $CONDA_PREFIX
-
-```shell
-export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
-```
-
-Then run duckdb:
-
-```shell
-cd src
-./build/release/duckdb
-```
-
-#### Building in container and running on host
-
-Important: the latest rdkit puts headers and shared libraries in different
-places than a version like 2023.09.04 for example. So it may be necessary
-to make sure the same version of rdkit is on the client as the building container.
-Otherwise, the duckdb extension won't be able to find the shared libraries
-
-Build the container:
-
-```shell
-docker build -t duckdb_rdkit_image .
-```
-
-Run the container and build duckdb
-
-```shell
-docker run -it --rm --name=duckdb_rdkit_image --mount type=bind,source=${PWD},target=/root/src duckdb_rdkit_image bash
-cd ~/src
-GEN=ninja make
-```
-
-On the host:
-
-Point to the shared libraries
-
-```shell
-export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
-```
-
-Run duckdb
-
-```shell
-./build/release/duckdb
-```
-
-Can also just point the duckdb to the extension file.
-Need to run in a conda env with RDKit and point to the shared objects
-
-```shell
-export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
-
-```
-
-```shell
-./build/release/duckdb -unsigned
-```
-
-In duckdb:
-
-```sql
-LOAD 'path/to/.duckdb_extension'
-```
-
-Then we have the duckdb_rdkit functions
 
 #### Running in python client:
 
-Need to have conda env with rdkit installed
+See duckdb documentation for instructions on installing the python client.
 
-```shell
-export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
-```
+You will need to tell duckdb where to find the RDKit shared object files.
+
+<!-- ```shell -->
+<!-- export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH -->
+<!-- ``` -->
 
 ```python
 import duckdb
 con = duckdb.connect(config = {"allow_unsigned_extensions": "true"})
 con.install_extension('/path/to/duckdb_rdkit.duckdb_extension')
 con.load_extension('/path/to/duckdb_rdkit.duckdb_extension')
-con.sql("SELECT mol_from_smiles('C')")
+# should return true
+con.sql("SELECT is_exact_match('C', 'C');")
+# should return false
+con.sql("SELECT is_exact_match('C', 'CO');")
 
 ```
 
-#### Install RDKit
+#### Running the extension by downloading the binary extension file, and not building it yourself
 
-The instructions are derived from this post on the RDKit [blog].
+If you download the binary extension file, and do not build it yourself, you will need to
+tell duckdb where the RDKit shared object libraries are.
 
-The easiest way is to install via conda/mamba.
+When RDKit is installed with conda, they can be found in `$CONDA_PREFIX/lib`
 
-Summary: Install conda and mamba. Create and activate a conda environment. Install RDkit in there.
-Run `make` to build duckdb and the extension.
+```shell
+export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
+```
+
+Then you can run according to the instructions as described in the above sections on running
+in the CLI or in the Python client.
 
 #### Issue with building on MacOS 14.3
 
 There was an issue building on MacOS 14.3 where a header from boost could not be found.
-You can try creating a conda env using the `starter_conda_env.yml` (from DavidACosgrove in the RDKit discussions).
+If you have trouble, you can try creating a conda env using the `starter_conda_env.yml` (from DavidACosgrove in the RDKit discussions).
 This includes boost libraries that are needed by RDKit. Then install RDKit into that env. And then run `make` in
 that env.
 
 [blog]: https://greglandrum.github.io/rdkit-blog/posts/2021-07-24-setting-up-a-cxx-dev-env.html
-
-#### Build duckdb with RDKit extension steps
-
-To build the extension, run:
-
-```sh
-make
-```
-
-The main binaries that will be built are:
-
-```sh
-./build/release/duckdb
-./build/release/test/unittest
-./build/release/extension/duckdb_rdkit/duckdb_rdkit.duckdb_extension
-```
-
-- `duckdb` is the binary for the duckdb shell with the extension code automatically loaded.
-- `unittest` is the test runner of duckdb. Again, the extension is already linked into the binary.
-- `duckdb_rdkit.duckdb_extension` is the loadable binary as it would be distributed.
-
-## Running the extension
-
-To run the extension code, simply start the shell with `./build/release/duckdb`.
-
-Now we can use the features from the extension directly in DuckDB.
-
-```
-D select mol_from_smiles('CC') as result;
-```
 
 ## Running the tests
 
@@ -251,48 +134,4 @@ Different tests can be created for DuckDB extensions. The primary way of testing
 
 ```sh
 make test
-```
-
-### Installing the deployed binaries
-
-To install your extension binaries from S3, you will need to do two things. Firstly, DuckDB should be launched with the
-`allow_unsigned_extensions` option set to true. How to set this will depend on the client you're using. Some examples:
-
-CLI:
-
-```shell
-duckdb -unsigned
-```
-
-Python:
-
-```python
-con = duckdb.connect(':memory:', config={'allow_unsigned_extensions' : 'true'})
-```
-
-NodeJS:
-
-```js
-db = new duckdb.Database(":memory:", { allow_unsigned_extensions: "true" });
-```
-
-Secondly, you will need to set the repository endpoint in DuckDB to the HTTP url of your bucket + version of the extension
-you want to install. To do this run the following SQL query in DuckDB:
-
-```sql
-SET custom_extension_repository='bucket.s3.eu-west-1.amazonaws.com/<your_extension_name>/latest';
-```
-
-Note that the `/latest` path will allow you to install the latest extension version available for your current version of
-DuckDB. To specify a specific version, you can pass the version instead.
-
-After running these steps, you can install and load your extension using the regular INSTALL/LOAD commands in DuckDB:
-
-```sql
-INSTALL duckdb_rdkit
-LOAD duckdb_rdkit
-```
-
-```
-
 ```
