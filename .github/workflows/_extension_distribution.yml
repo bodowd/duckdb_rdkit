@@ -145,8 +145,7 @@ jobs:
   linux:
     name: Linux
     runs-on: ubuntu-latest 
-    # container: ubuntu:22.04
-    container: ${{matrix.container}}
+    container: ubuntu:22.04
     needs: generate_matrix
     if: ${{ needs.generate_matrix.outputs.linux_matrix != '{}' && needs.generate_matrix.outputs.linux_matrix != '' }}
     strategy:
