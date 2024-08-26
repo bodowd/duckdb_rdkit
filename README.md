@@ -12,18 +12,18 @@ This extension, duckdb_rdkit, allows you to use RDKit functionality within DuckD
 
 ### Types
 
-- Mol: an rdkit molecule. Can be created from a SMILES in a variety of ways: inserting a valid SMILES
+- Mol: an RDKit molecule. Currently, can only be created from a SMILES in a variety of ways: inserting a valid SMILES
   string into a column that expects Mol, type conversion such as 'CC'::mol, or the mol_from_smiles function.
 
 ### Searches
 
 - is_exact_match(mol1, mol2) : exact structure search. Returns true if the two molecules are the same. (Chirality sensitive search is not on)
-- is_substruct(mol1, mol2)): returns true if mol2 is a substructure of mol1.
+- is_substruct(mol1, mol2): returns true if mol2 is a substructure of mol1.
 
 ### Molecule conversion functions
 
 - mol_from_smiles(SMILES): returns a molecule for a SMILES string. Returns NULL if mol cannot be made from SMILES
-- mol_to_smiles(mol): returns the SMILES string for a rdkit molecule
+- mol_to_smiles(mol): returns the SMILES string for a RDKit molecule
 
 ## Building
 
@@ -32,30 +32,34 @@ This extension, duckdb_rdkit, allows you to use RDKit functionality within DuckD
 To build the extension, you need to have RDKit installed. The easiest way
 to install RDKit is with conda. I used miniforge to install things: https://github.com/conda-forge/miniforge
 
-After installing it and having conda working, you can create a new
+After installing conda, you can create a new
 conda environment and then install the packages needed. The instructions are derived from this post on the RDKit [blog].
-As of August 2024, I am using this command to install the libraries needed:
+As of August 2024, I found installing these packages worked (librdkit-dev seems to have the relevant header files).
 
 ```shell
 # activate your conda env and then in your conda env run:
 conda install -c conda-forge -y boost-cpp boost cmake rdkit eigen librdkit-dev
 ```
 
-(librdkit-dev seems to have the relevant header files)
-
-You can visit https://duckdb.org/docs/dev/building/overview.html
-to find more information on how to build duckdb from source.
-
 After installing the prerequisite software, you can run `GEN=ninja make`.
 This will compile duckdb and the extension and you will find it in
 the `build` folder.
 
-### Running in the CLI
+For further information on building duckdb from source,
+you can visit https://duckdb.org/docs/dev/building/overview.html
 
-You can either run the duckdb executable you compiled found in
-`build/release` and that will have the duckdb_rdkit extension already
+## Running the extension
+
+### In the CLI
+
+Note: to compile the extension, I needed to use a more modern compiler
+
+You can either run the duckdb executable you compiled, found in
+`build/release`, and that will have the duckdb_rdkit extension already
 installed and loaded, or you can run a different duckdb executable, and then
 point that to the the duckdb_rdkit extension file.
+
+If you want to run the duckdb you compiled, you can just run `./build/release/duckdb`
 
 If you want to run a different executable that you installed and then load in
 the duckdb_rdkit extension, you can do the following:
@@ -83,7 +87,7 @@ SELECT is_exact_match('C', 'C');
 SELECT is_exact_match('C', 'CO');
 ```
 
-#### Running in python client:
+### In the python client
 
 See duckdb documentation for instructions on installing the python client.
 
