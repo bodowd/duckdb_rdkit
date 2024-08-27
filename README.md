@@ -107,20 +107,26 @@ you can visit https://duckdb.org/docs/dev/building/overview.html
 
 ### In the CLI
 
-These instructions will assume you built duckdb and the duckdb_rdkit extension
-from source.
-
-If you want to run the duckdb you compiled, you can just run `./build/release/duckdb`.
+If you want to run the duckdb binary you built from source from this
+duckdb_rdkit extension repository, you can just run `./build/release/duckdb`.
 This will already have the extension loaded in.
 
-If you want to run a different executable that you installed and then load in
-the duckdb_rdkit extension, you can try the following:
+If you downloaded the compiled binaries from here, you will need to tell
+duckdb where to find the RDKit shared object files. Otherwise, you may see this error:
+`./duckdb: error while loading shared libraries: libRDKitDescriptors.so.1: cannot open shared object file: No such file or directory`
 
-You may need to tell duckdb where to find the RDKit shared object files.
+If you have your conda env activated:
 
 ```shell
 export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
 ```
+
+If you don't have your conda env activated, you will need to find where
+your installation has placed these files. For example, in `~/miniforge3/envs/my_rdkit_env/lib`
+
+If you want to run with a different binary, but point to this extension,
+you'll need to tell duckdb where the extension is, and you also need to tell
+it to run unsigned extensions.
 
 Run duckdb with the `unsigned` flag on to run unsigned extensions.
 More information here: https://duckdb.org/docs/extensions/overview.html#unsigned-extensions
@@ -147,12 +153,11 @@ SELECT is_exact_match('C', 'CO');
 
 ### In the python client
 
-See the duckdb documentation for instructions on installing the python client.
-
 Warning: On Linux, I was unable to get the client I installed via pip to load the
 extension because it only seems to support loading extensions compiled with gcc 4.
-
 I was able to get the extension to load in the python client on OSX though.
+
+See the duckdb documentation for instructions on installing the python client.
 
 You may need to tell duckdb where to find the RDKit shared object files.
 
