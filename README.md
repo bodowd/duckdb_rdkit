@@ -18,6 +18,10 @@ This extension, duckdb_rdkit, allows you to use RDKit functionality within DuckD
 ### Searches
 
 - is_exact_match(mol1, mol2) : exact structure search. Returns true if the two molecules are the same. (Chirality sensitive search is not on)
+  - Note: if you are looking for very specific capabilities with exact match with regards
+    to stereochemistry or tautomers, the `RegistrationHash` (https://rdkit.org/docs/source/rdkit.Chem.RegistrationHash.html)
+    might be an option to consider. You would need to write this to your DB and
+    then you can do a simple VARCHAR based search on those columns.
 - is_substruct(mol1, mol2): returns true if mol2 is a substructure of mol1.
 
 ### Molecule conversion functions
@@ -25,15 +29,59 @@ This extension, duckdb_rdkit, allows you to use RDKit functionality within DuckD
 - mol_from_smiles(SMILES): returns a molecule for a SMILES string. Returns NULL if mol cannot be made from SMILES
 - mol_to_smiles(mol): returns the SMILES string for a RDKit molecule
 
-## Building
+## Some important information on getting started
 
-### Building duckdb with RDKit extension
+Unfortunately, it's not as easy as `INSTALL` and `LOAD` the extension as other duckdb
+extensions may be.
 
-To build the extension, you need to have RDKit installed. The easiest way
-to install RDKit is with conda. I used miniforge to install things: https://github.com/conda-forge/miniforge
+Long story short, I suggest building the extension from source,
+and you can find more information in the
+[Building](#building) section.
+
+### Linux
+
+The duckdb binary from duckdb's website, seems to only support
+loading extensions that were compiled with gcc4 (`linux_amd64_gcc4` platform in my
+case). I was only able to get the extension
+to compile with newer versions of GCC, possibly due to the RDKit dependency.
+Therfore, I was not able to load the duckdb_rdkit extension in a duckdb binary that
+I downloaded from their website.
+
+Probably the best way is to build the extension from source. This will give you
+a duckdb binary, as well as the duckdb_rdkit.duckdb_extension binary. The compilation
+will consider your OS.
+
+I will also work on making the compiled binaries from the github actions
+workflows available for certain platforms.
+
+### MacOS
+
+I suggest building from source.
+
+The compiled binary for the duckdb rdkit extension is not signed. You may get
+a warning about running unverified applications from the OS.
+
+Currently, I am unable to test if downloading the duckdb binary from their website can
+load the duckdb_rdkit extension.
+
+I will also work on making the compiled binaries from the github actions
+workflows available for certain osx platforms.
+
+### Windows
+
+I have not tested anything with Windows yet.
+
+## <a name="building"></a>Building
+
+### Building duckdb_rdkit
+
+To build the extension, you need to have RDKit installed.
+The instructions below are derived from this post on the RDKit [blog].
+The easiest way to install RDKit is with conda.
+I used miniforge to install things: https://github.com/conda-forge/miniforge
 
 After installing conda, you can create a new
-conda environment and then install the packages needed. The instructions are derived from this post on the RDKit [blog].
+conda environment and then install the packages needed.
 As of August 2024, I found installing these packages worked (librdkit-dev seems to have the relevant header files).
 
 ```shell
@@ -41,7 +89,13 @@ As of August 2024, I found installing these packages worked (librdkit-dev seems 
 conda install -c conda-forge -y boost-cpp boost cmake rdkit eigen librdkit-dev
 ```
 
-After installing the prerequisite software, you can run `GEN=ninja make`.
+After installing the prerequisite software, you can run:
+
+```shell
+
+GEN=ninja make
+```
+
 This will compile duckdb and the extension and you will find it in
 the `build` folder.
 
@@ -52,17 +106,20 @@ you can visit https://duckdb.org/docs/dev/building/overview.html
 
 ### In the CLI
 
-Note: to compile the extension, I needed to use a more modern compiler
+These instructions will assume you built duckdb and the duckdb_rdkit extension
+from source.
 
-You can either run the duckdb executable you compiled, found in
-`build/release`, and that will have the duckdb_rdkit extension already
-installed and loaded, or you can run a different duckdb executable, and then
-point that to the the duckdb_rdkit extension file.
-
-If you want to run the duckdb you compiled, you can just run `./build/release/duckdb`
+If you want to run the duckdb you compiled, you can just run `./build/release/duckdb`.
+This will already have the extension loaded in.
 
 If you want to run a different executable that you installed and then load in
-the duckdb_rdkit extension, you can do the following:
+the duckdb_rdkit extension, you can try the following:
+
+You may need to tell duckdb where to find the RDKit shared object files.
+
+```shell
+export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
+```
 
 Run duckdb with the `unsigned` flag on to run unsigned extensions.
 More information here: https://duckdb.org/docs/extensions/overview.html#unsigned-extensions
@@ -77,7 +134,7 @@ Then load the extension with the path to the duckdb_extension file:
 LOAD 'path/to/duckdb_rdkit.duckdb_extension'
 ```
 
-Now try
+Now confirm if the extension is working:
 
 ```shell
 # should return true
@@ -89,13 +146,20 @@ SELECT is_exact_match('C', 'CO');
 
 ### In the python client
 
-See duckdb documentation for instructions on installing the python client.
+See the duckdb documentation for instructions on installing the python client.
 
-You will need to tell duckdb where to find the RDKit shared object files.
+Warning: On Linux, I was unable to get the client I installed via pip to load the
+extension because it only seems to support loading extensions compiled with gcc 4.
 
-<!-- ```shell -->
-<!-- export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH -->
-<!-- ``` -->
+I was able to get the extension to load in the python client on OSX though.
+
+You may need to tell duckdb where to find the RDKit shared object files.
+
+```shell
+export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
+```
+
+Then test it out:
 
 ```python
 import duckdb
@@ -109,28 +173,14 @@ con.sql("SELECT is_exact_match('C', 'CO');")
 
 ```
 
-#### Running the extension by downloading the binary extension file, and not building it yourself
-
-If you download the binary extension file, and do not build it yourself, you will need to
-tell duckdb where the RDKit shared object libraries are.
-
-When RDKit is installed with conda, they can be found in `$CONDA_PREFIX/lib`
-
-```shell
-export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
-```
-
-Then you can run according to the instructions as described in the above sections on running
-in the CLI or in the Python client.
-
-#### Issue with building on MacOS 14.3
-
-There was an issue building on MacOS 14.3 where a header from boost could not be found.
-If you have trouble, you can try creating a conda env using the `starter_conda_env.yml` (from DavidACosgrove in the RDKit discussions).
-This includes boost libraries that are needed by RDKit. Then install RDKit into that env. And then run `make` in
-that env.
-
-[blog]: https://greglandrum.github.io/rdkit-blog/posts/2021-07-24-setting-up-a-cxx-dev-env.html
+<!-- #### Issue with building on MacOS 14.3 -->
+<!---->
+<!-- There was an issue building on MacOS 14.3 where a header from boost could not be found. -->
+<!-- If you have trouble, you can try creating a conda env using the `starter_conda_env.yml` (from DavidACosgrove in the RDKit discussions). -->
+<!-- This includes boost libraries that are needed by RDKit. Then install RDKit into that env. And then run `make` in -->
+<!-- that env. -->
+<!---->
+<!-- [blog]: https://greglandrum.github.io/rdkit-blog/posts/2021-07-24-setting-up-a-cxx-dev-env.html -->
 
 ## Running the tests
 
