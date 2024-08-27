@@ -325,6 +325,7 @@ jobs:
           name: ${{ inputs.extension_name }}-${{ inputs.duckdb_version }}-extension-${{matrix.duckdb_arch}}${{inputs.artifact_postfix}}
           path: |
             build/release/extension/${{ inputs.extension_name }}/${{ inputs.extension_name }}.duckdb_extension
+            build/release/duckdb
 
       - name: Output artifact URL
         run:  echo 'Artifact URL is ${{ steps.artifact-upload.outputs.artifact-url }}'
@@ -448,6 +449,7 @@ jobs:
           name: ${{ inputs.extension_name }}-${{ inputs.duckdb_version }}-extension-${{matrix.duckdb_arch}}${{inputs.artifact_postfix}}
           path: |
             build/release/extension/${{ inputs.extension_name }}/${{ inputs.extension_name }}.duckdb_extension
+            build/release/duckdb
 
 
       - name: Output artifact URL
