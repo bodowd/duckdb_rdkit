@@ -31,7 +31,8 @@ This extension, duckdb_rdkit, allows you to use RDKit functionality within DuckD
 
 ## Some important information on getting started
 
-Unfortunately, it's not as easy as `INSTALL` and `LOAD` the extension as other duckdb
+Unfortunately, I haven't been able to find a way to make installing the duckdb_rdkit
+extension as easy as `INSTALL` and `LOAD` as other duckdb
 extensions may be.
 
 Long story short, I suggest building the extension from source,
