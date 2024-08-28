@@ -76,6 +76,13 @@ I have not tested anything with Windows yet.
 
 ### Building duckdb_rdkit
 
+First, clone this repository with recurse submodules to pull duckdb and the
+extension-ci-tools repositories
+
+```shell
+git clone --recurse-submodules https://github.com/bodowd/duckdb_rdkit.git
+```
+
 To build the extension, you need to have RDKit installed.
 The instructions below are derived from this post on the RDKit [blog].
 The easiest way to install RDKit is with conda.
