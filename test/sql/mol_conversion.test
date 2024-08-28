@@ -42,3 +42,5 @@ query I
 SELECT 'C1=CC=CC=C1'::mol;
 ----
 c1ccccc1
+
+

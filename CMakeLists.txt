@@ -21,6 +21,7 @@ set(EXTENSION_SOURCES
     src/mol_formats.cpp
     src/types.cpp
     src/duckdb_rdkit_extension.cpp
+    src/umbra_mol.cpp
 )
 
 build_static_extension(${TARGET_NAME} ${EXTENSION_SOURCES})

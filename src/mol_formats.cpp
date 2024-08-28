@@ -1,12 +1,19 @@
+#include "mol_formats.hpp"
 #include "common.hpp"
 #include "duckdb/common/string_util.hpp"
+#include "duckdb/common/types.hpp"
+#include "duckdb/function/function_set.hpp"
 #include "types.hpp"
+#include "umbra_mol.hpp"
+#include <GraphMol/Descriptors/MolDescriptors.h>
 #include <GraphMol/FileParsers/FileParsers.h>
 #include <GraphMol/GraphMol.h>
 #include <GraphMol/MolPickler.h>
 #include <GraphMol/SmilesParse/SmartsWrite.h>
 #include <GraphMol/SmilesParse/SmilesParse.h>
 #include <GraphMol/SmilesParse/SmilesWrite.h>
+#include <memory>
+#include <sys/types.h>
 
 namespace duckdb_rdkit {
 // Expects a SMILES string and returns a RDKit pickled molecule
@@ -17,15 +24,14 @@ std::unique_ptr<RDKit::ROMol> rdkit_mol_from_smiles(std::string s) {
     mol.reset(RDKit::SmilesToMol(smiles));
   } catch (std::exception &e) {
     std::string msg = StringUtil::Format("%s", typeid(e).name());
-    // not sure if this is the right way to throw an error in duckdb
-    throw Exception(msg);
+    throw InvalidInputException(msg);
   }
 
   if (mol) {
     return mol;
   } else {
     std::string msg = StringUtil::Format("Could not convert %s to mol", smiles);
-    throw Exception(msg);
+    throw InvalidInputException(msg);
   }
 }
 
@@ -36,7 +42,7 @@ std::string rdkit_mol_to_binary_mol(const RDKit::ROMol mol) {
     RDKit::MolPickler::pickleMol(mol, buf);
   } catch (...) {
     std::string msg = "Could not serialize mol to binary";
-    throw Exception(msg);
+    throw InvalidInputException(msg);
   }
   return buf;
 }
@@ -49,39 +55,26 @@ std::unique_ptr<RDKit::ROMol> rdkit_binary_mol_to_mol(std::string bmol) {
   return mol;
 }
 
-// Expects an RDKit pickled molecule and returns the SMILES of the molecule
 std::string rdkit_mol_to_smiles(RDKit::ROMol mol) {
   std::string smiles = RDKit::MolToSmiles(mol);
   return smiles;
 }
 
-// An extension function callable from duckdb
-// converts a serialized RDKit molecule to SMILES
-//
-// If there is a table mols with a column of type Mol
-//
-//
-// select mol_to_smiles(*) from mols;
-//
 void mol_to_smiles(DataChunk &args, ExpressionState &state, Vector &result) {
   D_ASSERT(args.data.size() == 1);
   auto &bmol = args.data[0];
   auto count = args.size();
 
   UnaryExecutor::Execute<string_t, string_t>(
-      bmol, result, count, [&](string_t bmol) {
-        auto mol = rdkit_binary_mol_to_mol(bmol.GetString());
+      bmol, result, count, [&](string_t b_umbra_mol) {
+        auto umbra_mol = umbra_mol_t(b_umbra_mol);
+        auto bmol = umbra_mol.GetBinaryMol();
+        auto mol = rdkit_binary_mol_to_mol(bmol);
         auto smiles = rdkit_mol_to_smiles(*mol);
         return StringVector::AddString(result, smiles);
       });
 }
 
-// An extension function callable from duckdb
-// converts a SMILES all the way to the serialized version of the RDKit mol
-// returns NULL if conversion fails
-//
-// select mol_from_smiles('CC');
-//
 void mol_from_smiles(DataChunk &args, ExpressionState &state, Vector &result) {
   D_ASSERT(args.data.size() == 1);
   auto &smiles = args.data[0];
@@ -92,8 +85,12 @@ void mol_from_smiles(DataChunk &args, ExpressionState &state, Vector &result) {
       [&](string_t smiles, ValidityMask &mask, idx_t idx) {
         try {
           auto mol = rdkit_mol_from_smiles(smiles.GetString());
-          auto pickled_mol = rdkit_mol_to_binary_mol(*mol);
-          return StringVector::AddString(result, pickled_mol);
+
+          auto res = get_umbra_mol_string(*mol);
+
+          // IMPORTANT! StringVector::AddString needs to take a std::string
+          // Using string_t::GetString() seems to mangle the data
+          return StringVector::AddStringOrBlob(result, res);
         } catch (...) {
           mask.SetInvalid(idx);
           return string_t();

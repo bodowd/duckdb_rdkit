@@ -1,5 +1,6 @@
 #pragma once
 #include "common.hpp"
+#include "types.hpp"
 #include <GraphMol/GraphMol.h>
 
 namespace duckdb_rdkit {

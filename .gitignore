@@ -7,8 +7,12 @@ testext
 test/python/__pycache__/
 .Rhistory
 .cache
+*.duckdb
+compile_commands.json
+experiments/
 CMakeCache.txt
 compile_commands.json
 CMakeFiles
 chembl_postgres
-*.duckdb
+*.parquet
+venv/
