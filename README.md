@@ -41,29 +41,27 @@ and you can find more information in the
 
 ### Linux
 
-The duckdb binary from duckdb's website, seems to only support
-loading extensions that were compiled with gcc4 (`linux_amd64_gcc4` platform in my
-case). I was only able to get the extension
-to compile with newer versions of GCC, possibly due to the RDKit dependency.
-Therfore, I was not able to load the duckdb_rdkit extension in a duckdb binary that
-I downloaded from their website.
+I wasn't able to get the extension compiled on the `linux_amd64_gcc4` platform,
+but was able to compile it on `linux_amd64`.
+Importantly, if you want to use the duckdb python client, I had success loading
+the extension by using a duckdb installed with conda, rather than pip.
+The pip duckdb seems to be build for `linux_amd64_gcc4`, and since I could
+not get the extension to compile on that platform, it wouldn't load it.
 
-Probably the best way is to build the extension from source. This will give you
-a duckdb binary, as well as the duckdb_rdkit.duckdb_extension binary. The compilation
-will consider your OS.
+The conda install, however, seems to have installed a duckdb binary built
+on `linux_amd64`, and is able to load the extension, which I have build
+on `linux_amd64`.
 
-I will also work on making the compiled binaries from the github actions
-workflows available for certain platforms.
+I will try to build for `linux_arm64` and make those binaries available.
 
 ### MacOS
 
 I suggest building from source.
 
-The compiled binary for the duckdb rdkit extension is not signed. You may get
-a warning about running unverified applications from the OS.
+I found the duckdb python client was able to load duckdb_rdkit on `osx_arm64`.
 
-Currently, I am unable to test if downloading the duckdb binary from their website can
-load the duckdb_rdkit extension.
+The compiled binary built on Github Actions for the duckdb rdkit extension is not signed. You may get
+a warning about running unverified applications from the OS.
 
 I will also work on making the compiled binaries from the github actions
 workflows available for certain osx platforms.
@@ -161,8 +159,9 @@ SELECT is_exact_match('C', 'CO');
 ### In the python client
 
 Warning: On Linux, I was unable to get the client I installed via pip to load the
-extension because it only seems to support loading extensions compiled with gcc 4.
-I was able to get the extension to load in the python client on OSX though.
+extension because it only seems to support loading extensions compiled for `linux_amd64_gcc4`
+I was able to get it loaded in duckdb installed via conda though.
+I was also able to get the extension to load in the python client on OSX.
 
 See the duckdb documentation for instructions on installing the python client.
 
