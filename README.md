@@ -29,46 +29,22 @@ This extension, duckdb_rdkit, allows you to use RDKit functionality within DuckD
 - mol_from_smiles(SMILES): returns a molecule for a SMILES string. Returns NULL if mol cannot be made from SMILES
 - mol_to_smiles(mol): returns the SMILES string for a RDKit molecule
 
-## Some important information on getting started
+## Getting started
 
 Unfortunately, I haven't been able to find a way to make installing the duckdb_rdkit
 extension as easy as `INSTALL` and `LOAD` as other duckdb
 extensions may be.
 
-Long story short, I suggest building the extension from source,
-and you can find more information in the
-[Building](#building) section.
+I have only been able to successfully compile and test the extension on `linux_amd64`
+and `osx_arm64`.
 
-### Linux
-
-I wasn't able to get the extension compiled on the `linux_amd64_gcc4` platform,
-but was able to compile it on `linux_amd64`.
-Importantly, if you want to use the duckdb python client, I had success loading
-the extension by using a duckdb installed with conda, rather than pip.
-The pip duckdb seems to be build for `linux_amd64_gcc4`, and since I could
-not get the extension to compile on that platform, it wouldn't load it.
-
-The conda install, however, seems to have installed a duckdb binary built
-on `linux_amd64`, and is able to load the extension, which I have build
-on `linux_amd64`.
-
-I will try to build for `linux_arm64` and make those binaries available.
-
-### MacOS
-
-I suggest building from source.
-
-I found the duckdb python client was able to load duckdb_rdkit on `osx_arm64`.
-
-The compiled binary built on Github Actions for the duckdb rdkit extension is not signed. You may get
+You can download the binaries from the releases, or build the extension from source.
+The compiled binary built for the duckdb_rdkit extension is not signed. You may get
 a warning about running unverified applications from the OS.
 
-I will also work on making the compiled binaries from the github actions
-workflows available for certain osx platforms.
+- [Building](#building) section.
 
-### Windows
-
-I have not tested anything with Windows yet.
+- [Running](#running) the extension section.
 
 ## <a name="building"></a>Building
 
@@ -82,9 +58,8 @@ git clone --recurse-submodules https://github.com/bodowd/duckdb_rdkit.git
 ```
 
 To build the extension, you need to have RDKit installed.
-The instructions below are derived from this post on the RDKit [blog].
-The easiest way to install RDKit is with conda.
-I used miniforge to install things: https://github.com/conda-forge/miniforge
+The instructions below are derived from this post on the RDKit [blog](https://greglandrum.github.io/rdkit-blog/posts/2021-07-24-setting-up-a-cxx-dev-env.html).
+The easiest way to install RDKit is with conda, and I used [miniforge](https://github.com/conda-forge/miniforge).
 
 After installing conda, you can create a new
 conda environment and then install the packages needed.
@@ -92,13 +67,14 @@ As of August 2024, I found installing these packages worked (librdkit-dev seems 
 
 ```shell
 # activate your conda env and then in your conda env run:
+conda create -n rdkit_dev
+conda activate rdkit_dev
 conda install -c conda-forge -y boost-cpp boost cmake rdkit eigen librdkit-dev
 ```
 
 After installing the prerequisite software, you can run:
 
 ```shell
-
 GEN=ninja make
 ```
 
@@ -108,7 +84,7 @@ the `build` folder.
 For further information on building duckdb from source,
 you can visit https://duckdb.org/docs/dev/building/overview.html
 
-## Running the extension
+## <a name="running"></a> Running the extension
 
 ### In the CLI
 
@@ -117,7 +93,7 @@ duckdb_rdkit extension repository, you can just run `./build/release/duckdb`.
 This will already have the extension loaded in.
 
 If you downloaded the compiled binaries from here, you will need to tell
-duckdb where to find the RDKit shared object files. Otherwise, you may see this error:
+duckdb where to find the RDKit shared object files. Otherwise, you may see errors like this:
 `./duckdb: error while loading shared libraries: libRDKitDescriptors.so.1: cannot open shared object file: No such file or directory`
 
 If you have your conda env activated:
@@ -127,11 +103,17 @@ export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
 ```
 
 If you don't have your conda env activated, you will need to find where
-your installation has placed these files. For example, in `~/miniforge3/envs/my_rdkit_env/lib`
+your installation has placed these files. For example, in `~/miniforge3/envs/my_rdkit_env/lib`.
+You will need to add your path to `LD_LIBRARY_PATH`
 
-If you want to run with a different binary, but point to this extension,
+If you want to run with a different binary that does not have the extension already
+installed and loaded, but rather point to this extension,
 you'll need to tell duckdb where the extension is, and you also need to tell
 it to run unsigned extensions.
+
+Warning: I was not able to get the extension to run on the linux CLI binary downloaded
+from duckdb's website. That seems to have been compiled for `linux_amd64_gcc4`,
+and I was not successful compiling the extension for that.
 
 Run duckdb with the `unsigned` flag on to run unsigned extensions.
 More information here: https://duckdb.org/docs/extensions/overview.html#unsigned-extensions
@@ -159,11 +141,12 @@ SELECT is_exact_match('C', 'CO');
 ### In the python client
 
 Warning: On Linux, I was unable to get the client I installed via pip to load the
-extension because it only seems to support loading extensions compiled for `linux_amd64_gcc4`
-I was able to get it loaded in duckdb installed via conda though.
-I was also able to get the extension to load in the python client on OSX.
+extension because it only seems to support loading extensions compiled for `linux_amd64_gcc4`.
+I was able to get it loaded in duckdb installed via conda though. See [duckdb's website](https://duckdb.org/docs/api/python/overview.html#:~:text=The%20DuckDB%20Python%20API%20can,requires%20Python%203.7%20or%20newer.) for
+more information.
 
-See the duckdb documentation for instructions on installing the python client.
+See the duckdb [documentation](https://duckdb.org/docs/api/python/overview.html#:~:text=The%20DuckDB%20Python%20API%20can,requires%20Python%203.7%20or%20newer.)
+for instructions on installing the python client.
 
 You may need to tell duckdb where to find the RDKit shared object files.
 
@@ -184,15 +167,6 @@ con.sql("SELECT is_exact_match('C', 'C');")
 con.sql("SELECT is_exact_match('C', 'CO');")
 
 ```
-
-<!-- #### Issue with building on MacOS 14.3 -->
-<!---->
-<!-- There was an issue building on MacOS 14.3 where a header from boost could not be found. -->
-<!-- If you have trouble, you can try creating a conda env using the `starter_conda_env.yml` (from DavidACosgrove in the RDKit discussions). -->
-<!-- This includes boost libraries that are needed by RDKit. Then install RDKit into that env. And then run `make` in -->
-<!-- that env. -->
-<!---->
-<!-- [blog]: https://greglandrum.github.io/rdkit-blog/posts/2021-07-24-setting-up-a-cxx-dev-env.html -->
 
 ## Running the tests
 
