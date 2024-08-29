@@ -19,12 +19,12 @@ jobs:
       duckdb_version: v1.0.0
       extension_name: duckdb_rdkit
 
-  duckdb-stable-deploy:
-    name: Deploy extension binaries
-    needs: duckdb-stable-build
-    uses: duckdb/extension-ci-tools/.github/workflows/_extension_deploy.yml@main
-    secrets: inherit
-    with:
-      duckdb_version: v1.0.0
-      extension_name: duckdb_rdkit
-      deploy_latest: ${{ startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' }}
+  # duckdb-stable-deploy:
+  #   name: Deploy extension binaries
+  #   needs: duckdb-stable-build
+  #   uses: duckdb/extension-ci-tools/.github/workflows/_extension_deploy.yml@main
+  #   secrets: inherit
+  #   with:
+  #     duckdb_version: v1.0.0
+  #     extension_name: duckdb_rdkit
+  #     deploy_latest: ${{ startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' }}
