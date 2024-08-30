@@ -99,12 +99,15 @@ duckdb where to find the RDKit shared object files. Otherwise, you may see error
 If you have your conda env activated:
 
 ```shell
+# LINUX
 export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
+# OSX
+export DYLD_LIBRARY_PATH=$CONDA_PREFIX/lib:$DYLD_LIBRARY_PATH
 ```
 
 If you don't have your conda env activated, you will need to find where
 your installation has placed these files. For example, in `~/miniforge3/envs/my_rdkit_env/lib`.
-You will need to add your path to `LD_LIBRARY_PATH`
+You will need to add your path to `LD_LIBRARY_PATH` on Linux, or `DYLD_LIBRARY_PATH` on osx.
 
 If you want to run with a different binary that does not have the extension already
 installed and loaded, but rather point to this extension,
@@ -151,7 +154,10 @@ for instructions on installing the python client.
 You may need to tell duckdb where to find the RDKit shared object files.
 
 ```shell
+# LINUX
 export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
+# OSX
+export DYLD_LIBRARY_PATH=$CONDA_PREFIX/lib:$DYLD_LIBRARY_PATH
 ```
 
 Then test it out:
