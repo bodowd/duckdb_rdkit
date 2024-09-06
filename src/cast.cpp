@@ -24,10 +24,15 @@ namespace duckdb_rdkit {
 void VarcharToMol(Vector &source, Vector &result, idx_t count) {
   UnaryExecutor::Execute<string_t, string_t>(
       source, result, count, [&](string_t smiles) {
+        std::cout << "VarcharToMol called!" << std::endl;
         // this varchar is just a regular string, not a umbramol
         // Try to see if it is a SMILES
         auto mol = rdkit_mol_from_smiles(smiles.GetString());
         auto umbra_mol = get_umbra_mol_string(*mol);
+
+        for (char b : umbra_mol) {
+          printf("%02x ", static_cast<unsigned char>(b));
+        }
 
         return StringVector::AddStringOrBlob(result, umbra_mol);
       });

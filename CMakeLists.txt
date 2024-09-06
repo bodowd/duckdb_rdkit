@@ -16,6 +16,7 @@ project(${TARGET_NAME})
 include_directories(src/include)
 
 set(EXTENSION_SOURCES 
+    src/fingerprints.cpp
     src/cast.cpp
     src/mol_compare.cpp
     src/mol_formats.cpp
@@ -31,6 +32,7 @@ set(DUCKDB_RDKIT_LIBRARIES
    RDKit::SmilesParse  
    RDKit::GraphMol 
    RDKit::Descriptors
+   RDKit::Fingerprints
     )
 # Link OpenSSL in both the static library as the loadable extension
 target_link_libraries(${EXTENSION_NAME} ${DUCKDB_RDKIT_LIBRARIES})

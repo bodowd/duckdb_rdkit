@@ -3,6 +3,7 @@
 #include "duckdb_rdkit_extension.hpp"
 #include "cast.hpp"
 #include "duckdb/main/extension_util.hpp"
+#include "fingerprints.hpp"
 #include "mol_compare.hpp"
 #include "mol_formats.hpp"
 #include "types.hpp"
@@ -22,6 +23,7 @@ static void LoadInternal(DatabaseInstance &instance) {
   duckdb_rdkit::RegisterCasts(instance);
   duckdb_rdkit::RegisterFormatFunctions(instance);
   duckdb_rdkit::RegisterCompareFunctions(instance);
+  duckdb_rdkit::RegisterFingerprintFunctions(instance);
 }
 
 void DuckdbRdkitExtension::Load(DuckDB &db) { LoadInternal(*db.instance); }
