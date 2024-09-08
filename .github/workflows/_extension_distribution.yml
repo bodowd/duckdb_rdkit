@@ -145,7 +145,7 @@ jobs:
 
   linux:
     name: Linux
-    runs-on: ubuntu-latest 
+    runs-on: ubuntu-22.04
     container: ubuntu:22.04
     needs: generate_matrix
     if: ${{ needs.generate_matrix.outputs.linux_matrix != '{}' && needs.generate_matrix.outputs.linux_matrix != '' }}
@@ -300,7 +300,7 @@ jobs:
         shell: bash -el {0}
         run: | 
               echo "begin: PATH=$PATH;"     
-              conda install -c conda-forge -y boost-cpp boost cmake rdkit eigen librdkit-dev
+              conda install -c conda-forge -y boost-cpp==1.84.0 boost==1.84.0 cmake rdkit==2024.03.5 eigen==3.4.0 librdkit-dev==2024.03.5
 
       - name: Build extension
         shell: bash -el {0}
@@ -419,7 +419,7 @@ jobs:
         shell: bash -el {0}
         run: | 
               echo "begin: PATH=$PATH;"     
-              conda install -c conda-forge -y boost-cpp boost cmake rdkit eigen librdkit-dev
+              conda install -c conda-forge -y boost-cpp==1.84.0 boost==1.84.0 cmake rdkit==2024.03.5 eigen==3.4.0 librdkit-dev==2024.03.5
 
       - name: Build extension
         shell: bash -el {0}

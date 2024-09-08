@@ -1,4 +1,5 @@
 #include "common.hpp"
+#include "duckdb/common/exception.hpp"
 #include "duckdb/common/operator/cast_operators.hpp"
 #include "duckdb/common/types/string_type.hpp"
 #include "duckdb/common/types/vector.hpp"
@@ -22,14 +23,25 @@ namespace duckdb_rdkit {
 // Duckdb will try to convert the string to a rdkit mol
 // This is consistent with the RDKit Postgres cartridge behavior
 void VarcharToMol(Vector &source, Vector &result, idx_t count) {
-  UnaryExecutor::Execute<string_t, string_t>(
-      source, result, count, [&](string_t smiles) {
-        // this varchar is just a regular string, not a umbramol
-        // Try to see if it is a SMILES
-        auto mol = rdkit_mol_from_smiles(smiles.GetString());
-        auto umbra_mol = get_umbra_mol_string(*mol);
+  UnaryExecutor::ExecuteWithNulls<string_t, string_t>(
+      source, result, count,
+      [&](string_t smiles, ValidityMask &mask, idx_t idx) {
+        try {
 
-        return StringVector::AddStringOrBlob(result, umbra_mol);
+          // this varchar is just a regular string, not a umbramol
+          // Try to see if it is a SMILES
+          auto mol = rdkit_mol_from_smiles(smiles.GetString());
+          auto umbra_mol = get_umbra_mol_string(*mol);
+
+          return StringVector::AddStringOrBlob(result, umbra_mol);
+        } catch (...) {
+          std::cout << "WARNING: could not create molecule from SMILES\n"
+                    << smiles.GetData() << std::endl;
+          // printf("WARNING: could not create molecule from SMILES %s\n",
+          //        smiles.GetData());
+          mask.SetInvalid(idx);
+          return string_t();
+        }
       });
 }
 

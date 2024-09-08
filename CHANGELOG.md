@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- `mol_from_smiles` returns null if molecule cannot be made from SMILES
+- Casting varchard to mol returns null if molecule cannot be made from SMILES
+
 ## [0.1.0] - 2024-08-29
 
 ### Added
