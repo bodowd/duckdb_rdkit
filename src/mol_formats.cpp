@@ -92,6 +92,8 @@ void mol_from_smiles(DataChunk &args, ExpressionState &state, Vector &result) {
           // Using string_t::GetString() seems to mangle the data
           return StringVector::AddStringOrBlob(result, res);
         } catch (...) {
+          printf("WARNING: could not create molecule from SMILES %s\n",
+                 smiles.GetData());
           mask.SetInvalid(idx);
           return string_t();
         }

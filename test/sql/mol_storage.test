@@ -46,13 +46,22 @@ c1ccccc1
 c1ccccc1
 
 
+statement ok
+CREATE TABLE t (id INT, m Mol);
 
 # an invalid SMILES will be unable to be converted from a string
-statement error
-INSERT INTO molecules (m) VALUES ('CCa');
+# a warning will be printed to the user, but can't test that print out
+# with sqllogictest
+# The database will insert a NULL
+statement ok
+INSERT INTO t (id, m) VALUES (1, 'CCa');
+
+query II
+SELECT id, m from t WHERE m IS NULL;
 ----
-Could not convert CCa to mol
+1	NULL
 
-
-
+query II
+SELECT id, m from t WHERE m IS NOT NULL;
+----
 

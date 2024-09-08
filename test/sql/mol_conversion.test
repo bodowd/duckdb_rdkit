@@ -25,6 +25,8 @@ SELECT mol_from_smiles('C1=CC=CC=C1');
 c1ccccc1
 
 # mol_from_smiles on invalid SMILES should return NULL
+# a warning will be printed to the user, but can't test that print out
+# with sqllogictest
 query I
 SELECT mol_from_smiles('NOTASMILES');
 ----
