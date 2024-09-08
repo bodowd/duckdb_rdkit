@@ -12,8 +12,6 @@
 #include <GraphMol/SmilesParse/SmartsWrite.h>
 #include <GraphMol/SmilesParse/SmilesParse.h>
 #include <GraphMol/SmilesParse/SmilesWrite.h>
-#include <memory>
-#include <sys/types.h>
 
 namespace duckdb_rdkit {
 // Expects a SMILES string and returns a RDKit pickled molecule
@@ -92,8 +90,10 @@ void mol_from_smiles(DataChunk &args, ExpressionState &state, Vector &result) {
           // Using string_t::GetString() seems to mangle the data
           return StringVector::AddStringOrBlob(result, res);
         } catch (...) {
-          printf("WARNING: could not create molecule from SMILES %s\n",
-                 smiles.GetData());
+          std::cout << "WARNING: could not create molecule from SMILES\n"
+                    << smiles.GetData() << std::endl;
+          // printf("WARNING: could not create molecule from SMILES %s\n",
+          //        smiles.GetData());
           mask.SetInvalid(idx);
           return string_t();
         }

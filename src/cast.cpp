@@ -35,8 +35,10 @@ void VarcharToMol(Vector &source, Vector &result, idx_t count) {
 
           return StringVector::AddStringOrBlob(result, umbra_mol);
         } catch (...) {
-          printf("WARNING: could not create molecule from SMILES %s\n",
-                 smiles.GetData());
+          std::cout << "WARNING: could not create molecule from SMILES\n"
+                    << smiles.GetData() << std::endl;
+          // printf("WARNING: could not create molecule from SMILES %s\n",
+          //        smiles.GetData());
           mask.SetInvalid(idx);
           return string_t();
         }
