@@ -1,4 +1,3 @@
-#pragma once
 #include "umbra_mol.hpp"
 #include "common.hpp"
 #include "duckdb/common/exception.hpp"
