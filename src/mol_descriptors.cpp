@@ -11,7 +11,7 @@
 
 namespace duckdb_rdkit {
 
-void exactmw(DataChunk &args, ExpressionState &state, Vector &result) {
+void mol_exactmw(DataChunk &args, ExpressionState &state, Vector &result) {
   D_ASSERT(args.data.size() == 1);
   auto &binary_umbra_mol = args.data[0];
   auto count = args.size();
