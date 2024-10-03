@@ -12,22 +12,28 @@ This extension, duckdb_rdkit, allows you to use RDKit functionality within DuckD
 
 ### Types
 
-- Mol: an RDKit molecule. Currently, can only be created from a SMILES in a variety of ways: inserting a valid SMILES
+- `Mol`: an RDKit molecule. Currently, can only be created from a SMILES in a variety of ways: inserting a valid SMILES
   string into a column that expects Mol, type conversion such as 'CC'::mol, or the mol_from_smiles function.
 
 ### Searches
 
-- is_exact_match(mol1, mol2) : exact structure search. Returns true if the two molecules are the same. (Chirality sensitive search is not on)
+- `is_exact_match(mol1, mol2)`: exact structure search. Returns true if the two molecules are the same. (Chirality sensitive search is not on)
   - Note: if you are looking for very specific capabilities with exact match with regards
     to stereochemistry or tautomers, the `RegistrationHash` (https://rdkit.org/docs/source/rdkit.Chem.RegistrationHash.html)
     might be an option to consider. You would need to write this to your DB and
     then you can do a simple VARCHAR based search on those columns.
-- is_substruct(mol1, mol2): returns true if mol2 is a substructure of mol1.
+- `is_substruct(mol1, mol2)`: returns true if mol2 is a substructure of mol1.
 
 ### Molecule conversion functions
 
-- mol_from_smiles(SMILES): returns a molecule for a SMILES string. Returns NULL if mol cannot be made from SMILES
-- mol_to_smiles(mol): returns the SMILES string for a RDKit molecule
+- `mol_from_smiles(SMILES)`: returns a molecule for a SMILES string. Returns NULL if mol cannot be made from SMILES
+- `mol_to_smiles(mol)`: returns the SMILES string for a RDKit molecule
+
+### Molecule descriptors
+
+- `mol_exactmw(mol)`: returns the exact molecular weight
+- `mol_amw(mol)`: returns the approximate molecular weight
+- `mol_tpsa(mol)`: returns the topological polar surface area
 
 ## Getting started
 
