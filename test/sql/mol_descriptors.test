@@ -1,0 +1,27 @@
+# Require statement will ensure this test is run with this extension loaded
+require duckdb_rdkit
+
+
+statement ok
+CREATE TABLE molecules (m Mol, mw FLOAT, tpsa FLOAT);
+
+statement ok 
+INSERT INTO molecules VALUES 
+	(mol_from_smiles('C1=CC=CC=C1'), null, null),
+	(mol_from_smiles('CC'), null, null), 
+	(mol_from_smiles('CCO'), null, null);
+
+statement ok
+UPDATE molecules SET mw=mol_exactmw(m);
+
+statement ok
+UPDATE molecules SET tpsa=mol_tpsa(m);
+
+query III
+SELECT m, mw, tpsa FROM molecules;
+----
+c1ccccc1	78.04695	0.0 
+CC	30.04695	0.0 
+CCO	46.041866	20.23 
+
+
