@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2024-10-14
+
 ### Added
 
 - `mol_qed` to calculate the quantitative estimate of drug-likeness (QED)
