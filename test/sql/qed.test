@@ -1,0 +1,22 @@
+# Require statement will ensure this test is run with this extension loaded
+require duckdb_rdkit
+
+
+statement ok
+CREATE TABLE molecules (m Mol, qed FLOAT);
+
+statement ok
+INSERT into molecules VALUES
+	(mol_from_smiles('N=C(CCSCc1csc(N=C(N)N)n1)NS(N)(=O)=O'), null),
+	(mol_from_smiles('CNC(=NCCSCc1nc[nH]c1C)NC#N'), null),
+	(mol_from_smiles('CCCCCNC(=N)NN=Cc1c[nH]c2ccc(CO)cc12'), null);
+
+statement ok
+UPDATE molecules SET qed=mol_qed(m);
+
+query II
+SELECT m, qed FROM molecules;
+----
+N=C(CCSCc1csc(N=C(N)N)n1)NS(N)(=O)=O	0.2548425
+CNC(=NCCSCc1nc[nH]c1C)NC#N	0.23525685
+CCCCCNC(=N)NN=Cc1c[nH]c2ccc(CO)cc12	0.23470165
