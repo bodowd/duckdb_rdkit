@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `mol_qed` to calculate the quantitative estimate of drug-likeness (QED)
+
 ### Changed
 
 - `mol_from_smiles` returns null if molecule cannot be made from SMILES
