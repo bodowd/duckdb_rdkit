@@ -8,11 +8,20 @@
 #include <GraphMol/SmilesParse/SmilesParse.h>
 #include <memory>
 #include <unordered_map>
+
 namespace duckdb_rdkit {
 
-std::vector<RDKit::RWMol> smarts2mols(std::vector<std::string> smarts);
+class QED {
+public:
+  QED() {
+    acceptorMols = smarts2mols(acceptorSmarts);
+    alertMols = smarts2mols(structuralAlertSmarts);
+    aliphaticRingsMol.reset(RDKit::SmartsToMol(aliphaticRingSmarts));
+  }
 
-struct QED {
+  float CalcQED(const RDKit::ROMol &mol);
+
+private:
   struct ADSparameter {
     double A, B, C, D, E, F, DMAX;
   };
@@ -47,12 +56,39 @@ struct QED {
     };
   };
 
-  QED() {
-    acceptorMols = smarts2mols(acceptorSmarts);
-    alertMols = smarts2mols(structuralAlertSmarts);
-    aliphaticRingsMol.reset(RDKit::SmartsToMol(aliphaticRingSmarts));
-  }
-
+  // Helper function to convert a vector of SMARTS to a vector of RDKit
+  // molecules
+  std::vector<RDKit::RWMol> smarts2mols(std::vector<std::string> smarts);
+  //  Asymmetric Double Sigmoidal (ADS) function parameters used to model the
+  //  histogram. Parameters provided by the paper (see top of file)
+  std::unordered_map<std::string, ADSparameter> adsParameters = {
+      {"MW",
+       {2.817065973, 392.5754953, 290.7489764, 2.419764353, 49.22325677,
+        65.37051707, 104.9805561}},
+      {"ALOGP",
+       {3.172690585, 137.8624751, 2.534937431, 4.581497897, 0.822739154,
+        0.576295591, 131.3186604}},
+      {"HBA",
+       {2.948620388, 160.4605972, 3.615294657, 4.435986202, 0.290141953,
+        1.300669958, 148.7763046}},
+      {"HBD",
+       {1.618662227, 1010.051101, 0.985094388, 0.000000001, 0.713820843,
+        0.920922555, 258.1632616}},
+      {"PSA",
+       {1.876861559, 125.2232657, 62.90773554, 87.83366614, 12.01999824,
+        28.51324732, 104.5686167}},
+      {"ROTB",
+       {0.010000000, 272.4121427, 2.558379970, 1.565547684, 1.271567166,
+        2.758063707, 105.4420403}},
+      {"AROM",
+       {3.217788970, 957.7374108, 2.274627939, 0.000000001, 1.317690384,
+        0.375760881, 312.3372610}},
+      {"ALERTS",
+       {0.010000000, 1199.094025, -0.09002883, 0.000000001, 0.185904477,
+        0.875193782, 417.7253140}}};
+  std::vector<RDKit::RWMol> acceptorMols;
+  std::vector<RDKit::RWMol> alertMols;
+  std::unique_ptr<RDKit::RWMol> aliphaticRingsMol;
   std::string aliphaticRingSmarts = "[$([A;R][!a])]";
   std::vector<std::string> acceptorSmarts = {"[oH0;X2]",
                                              "[OH1;X2;v2]",
@@ -113,56 +149,28 @@ struct QED {
       QEDproperties(0.66, 0.46, 0.05, 0.61, 0.06, 0.65, 0.48, 0.95);
   QEDproperties WEIGHT_NONE =
       QEDproperties(1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00);
-
   // Compute the RDKit molecule object for aliphatic rings
-  std::unique_ptr<RDKit::RWMol> GetAliphaticRingsMol();
+  std::unique_ptr<RDKit::RWMol> getAliphaticRingsMol();
+  // Note for getStructurealAlertMols and getAcceptorMols:
+  // Store the RDKit molecule itself and not the pointer because using a pointer
+  // requires a pointer dereference on each iteration of the loop in
+  // calcProperties whereas storing the molecule itself in the vector should
+  // have the molecules contiguously in memory and better cache locality.
+  // Also if using a unique_ptr, code working with the unique_ptr would need to
+  // handle ownership and make sure it is moved correctly in the loop.
+  //
   // Compute the RDKit molecule objects for the structural alerts
-  std::vector<std::unique_ptr<RDKit::RWMol>> GetStructuralAlertMols();
-  std::vector<std::unique_ptr<RDKit::RWMol>> GetAcceptorMols();
-
-  // Compute the asymmetric double sigmoidal function using the value of the
-  // descriptor of interest (the parameter `x` in the function) and the
-  // adsParameters for that descriptor of interest
-  double CalcADS(float x, std::string adsParameterKey);
+  std::vector<std::unique_ptr<RDKit::RWMol>> getStructuralAlertMols();
+  // Compute the RDKit molecule objects for hydrogen bond acceptors
+  std::vector<std::unique_ptr<RDKit::RWMol>> getAcceptorMols();
   // Calculate the properties needed for the QED descriptor
-  QEDproperties CalcProperties(const RDKit::ROMol &mol,
+  QEDproperties calcProperties(const RDKit::ROMol &mol,
                                std::vector<RDKit::RWMol> acceptorMols,
                                std::unique_ptr<RDKit::RWMol> aliphaticRingMol,
                                std::vector<RDKit::RWMol> alertMols);
-
-  float CalcQED(const RDKit::ROMol &mol);
-
-  //  Asymmetric Double Sigmoidal (ADS) function parameters used to model the
-  //  histogram. Parameters provided by the paper (see top of file)
-  std::unordered_map<std::string, ADSparameter> adsParameters = {
-      {"MW",
-       {2.817065973, 392.5754953, 290.7489764, 2.419764353, 49.22325677,
-        65.37051707, 104.9805561}},
-      {"ALOGP",
-       {3.172690585, 137.8624751, 2.534937431, 4.581497897, 0.822739154,
-        0.576295591, 131.3186604}},
-      {"HBA",
-       {2.948620388, 160.4605972, 3.615294657, 4.435986202, 0.290141953,
-        1.300669958, 148.7763046}},
-      {"HBD",
-       {1.618662227, 1010.051101, 0.985094388, 0.000000001, 0.713820843,
-        0.920922555, 258.1632616}},
-      {"PSA",
-       {1.876861559, 125.2232657, 62.90773554, 87.83366614, 12.01999824,
-        28.51324732, 104.5686167}},
-      {"ROTB",
-       {0.010000000, 272.4121427, 2.558379970, 1.565547684, 1.271567166,
-        2.758063707, 105.4420403}},
-      {"AROM",
-       {3.217788970, 957.7374108, 2.274627939, 0.000000001, 1.317690384,
-        0.375760881, 312.3372610}},
-      {"ALERTS",
-       {0.010000000, 1199.094025, -0.09002883, 0.000000001, 0.185904477,
-        0.875193782, 417.7253140}}};
-
-private:
-  std::vector<RDKit::RWMol> acceptorMols;
-  std::vector<RDKit::RWMol> alertMols;
-  std::unique_ptr<RDKit::RWMol> aliphaticRingsMol;
+  // Compute the asymmetric double sigmoidal function using the value of the
+  // descriptor of interest (the parameter `x` in the function) and the
+  // adsParameters for that descriptor of interest
+  double calcADS(float x, std::string adsParameterKey);
 };
 } // namespace duckdb_rdkit

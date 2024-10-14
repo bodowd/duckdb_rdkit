@@ -8,13 +8,12 @@
 #include <GraphMol/SmilesParse/SmilesParse.h>
 #include <GraphMol/Substruct/SubstructMatch.h>
 #include <memory>
-#include <numeric>
 #include <string>
 #include <vector>
 
 namespace duckdb_rdkit {
 
-std::vector<RDKit::RWMol> smarts2mols(std::vector<std::string> smarts) {
+std::vector<RDKit::RWMol> QED::smarts2mols(std::vector<std::string> smarts) {
   std::vector<RDKit::RWMol> mols;
   for (auto s : smarts) {
     std::unique_ptr<RDKit::RWMol> mol;
@@ -24,7 +23,7 @@ std::vector<RDKit::RWMol> smarts2mols(std::vector<std::string> smarts) {
   return mols;
 }
 
-double QED::CalcADS(float x, std::string adsParameterKey) {
+double QED::calcADS(float x, std::string adsParameterKey) {
   auto p = QED::adsParameters[adsParameterKey];
   auto exp1 = 1 + std::exp(-1 * (x - p.C + p.D / 2) / p.E);
   auto exp2 = 1 + std::exp(-1 * (x - p.C - p.D / 2) / p.F);
@@ -33,7 +32,7 @@ double QED::CalcADS(float x, std::string adsParameterKey) {
 }
 
 QED::QEDproperties
-QED::CalcProperties(const RDKit::ROMol &mol,
+QED::calcProperties(const RDKit::ROMol &mol,
                     std::vector<RDKit::RWMol> acceptorMols,
                     std::unique_ptr<RDKit::RWMol> aliphaticRingMol,
                     std::vector<RDKit::RWMol> alertMols) {
@@ -69,14 +68,14 @@ QED::CalcProperties(const RDKit::ROMol &mol,
 }
 
 float QED::CalcQED(const RDKit::ROMol &mol) {
-  auto properties = CalcProperties(mol, acceptorMols,
+  auto properties = calcProperties(mol, acceptorMols,
                                    std::move(aliphaticRingsMol), alertMols);
   float sumOfWeightedADSValues = 0.0;
   float sumOfWeights = 0.0;
 
   for (const auto &[k, v] : properties.data) {
     sumOfWeightedADSValues +=
-        (WEIGHT_MEAN.data[k] * std::log(CalcADS(properties.data[k], k)));
+        (WEIGHT_MEAN.data[k] * std::log(calcADS(properties.data[k], k)));
     sumOfWeights += WEIGHT_MEAN.data[k];
   }
 
