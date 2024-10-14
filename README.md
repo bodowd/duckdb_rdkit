@@ -34,6 +34,8 @@ This extension, duckdb_rdkit, allows you to use RDKit functionality within DuckD
 - `mol_exactmw(mol)`: returns the exact molecular weight
 - `mol_amw(mol)`: returns the approximate molecular weight
 - `mol_tpsa(mol)`: returns the topological polar surface area
+- `mol_qed(mol)`: returns the quantitative estimate of drug-likeness (QED) of the molecule
+  - currently only implements the "mean weight" of the ADS parameters from the paper Quantifying the chemical beauty of drugs by Bickerton, et al.
 
 ## Getting started
 
