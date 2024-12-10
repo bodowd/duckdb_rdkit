@@ -169,7 +169,9 @@ jobs:
           apt-get update -y -qq
           apt-get install -y -qq software-properties-common
           apt-get install -y -qq --fix-missing ninja-build make gcc-multilib g++-multilib libssl-dev wget openjdk-8-jdk zip maven unixodbc-dev libc6-dev-i386 lib32readline6-dev libssl-dev libcurl4-gnutls-dev libexpat1-dev gettext unzip build-essential checkinstall libffi-dev curl libz-dev openssh-client pkg-config
-          apt-get install -y g++ wget make libgl1-mesa-dev mesa-common-dev 
+          apt-get install -y g++ wget make libgl1-mesa-dev mesa-common-dev
+          gcc --version
+          g++ --version
 
       - name: Install required manylinux packages
         if: ${{ matrix.duckdb_arch == 'linux_amd64_gcc4' }}
@@ -300,7 +302,8 @@ jobs:
         shell: bash -el {0}
         run: | 
               echo "begin: PATH=$PATH;"     
-              conda install -c conda-forge -y boost-cpp==1.84.0 boost==1.84.0 cmake rdkit==2024.03.5 eigen==3.4.0 librdkit-dev==2024.03.5
+              conda env update -n rdkit_build --file starter_conda_env.yml
+              conda list | grep boost
 
       - name: Build extension
         shell: bash -el {0}
@@ -312,6 +315,7 @@ jobs:
         run: | 
             conda activate rdkit_build   
             conda info --envs
+            gcc --version
             echo "CMAKE_PREFIX_PATH=$CONDA_PREFIX:$CMAKE_PREFIX_PATH" >> $GITHUB_ENV
             make release
 
@@ -419,7 +423,7 @@ jobs:
         shell: bash -el {0}
         run: | 
               echo "begin: PATH=$PATH;"     
-              conda install -c conda-forge -y boost-cpp==1.84.0 boost==1.84.0 cmake rdkit==2024.03.5 eigen==3.4.0 librdkit-dev==2024.03.5
+              conda env update -n rdkit_build --file starter_conda_env.yml
 
       - name: Build extension
         shell: bash -el {0}
