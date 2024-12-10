@@ -1,6 +1,8 @@
+#include "duckdb/common/types.hpp"
 #include "mol_descriptors.hpp"
-#define DUCKDB_EXTENSION_MAIN
+#include "sdf_scanner/sdf_functions.hpp"
 
+#define DUCKDB_EXTENSION_MAIN
 #include "cast.hpp"
 #include "duckdb/main/extension_util.hpp"
 #include "duckdb_rdkit_extension.hpp"
@@ -24,6 +26,10 @@ static void LoadInternal(DatabaseInstance &instance) {
   duckdb_rdkit::RegisterFormatFunctions(instance);
   duckdb_rdkit::RegisterCompareFunctions(instance);
   duckdb_rdkit::RegisterDescriptorFunctions(instance);
+
+  for (auto &fun : SDFFunctions::GetTableFunctions()) {
+    ExtensionUtil::RegisterFunction(instance, fun);
+  }
 }
 
 void DuckdbRdkitExtension::Load(DuckDB &db) { LoadInternal(*db.instance); }

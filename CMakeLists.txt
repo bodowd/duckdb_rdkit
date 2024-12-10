@@ -16,6 +16,8 @@ project(${TARGET_NAME})
 include_directories(src/include)
 
 set(EXTENSION_SOURCES 
+    src/sdf_scanner/sdf_functions.cpp
+    src/sdf_scanner/sdf_scan.cpp
     src/cast.cpp
     src/mol_compare.cpp
     src/mol_formats.cpp
