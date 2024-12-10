@@ -31,6 +31,7 @@ This extension, duckdb_rdkit, allows you to use RDKit functionality within DuckD
 
 ### Molecule descriptors
 
+- `mol_logp(mol)`: returns the Wildman-Crippen LogP estimate for a molecule
 - `mol_exactmw(mol)`: returns the exact molecular weight
 - `mol_amw(mol)`: returns the approximate molecular weight
 - `mol_tpsa(mol)`: returns the topological polar surface area
