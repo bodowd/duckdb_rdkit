@@ -3,13 +3,13 @@ require duckdb_rdkit
 
 
 statement ok
-CREATE TABLE molecules (m Mol, exactmw FLOAT, tpsa FLOAT, amw FLOAT);
+CREATE TABLE molecules (m Mol, exactmw FLOAT, tpsa FLOAT, amw FLOAT, logp FLOAT);
 
 statement ok 
 INSERT INTO molecules VALUES 
-	(mol_from_smiles('C1=CC=CC=C1'), null, null, null),
-	(mol_from_smiles('CC'), null, null, null), 
-	(mol_from_smiles('CCO'), null, null, null);
+	(mol_from_smiles('C1=CC=CC=C1'), null, null, null, null),
+	(mol_from_smiles('CC'), null, null, null, null), 
+	(mol_from_smiles('CCO'), null, null, null, null);
 
 statement ok
 UPDATE molecules SET exactmw=mol_exactmw(m);
@@ -20,11 +20,14 @@ UPDATE molecules SET tpsa=mol_tpsa(m);
 statement ok
 UPDATE molecules SET amw=mol_amw(m);
 
-query IIII
-SELECT m, exactmw, tpsa, amw FROM molecules;
+statement ok
+UPDATE molecules SET logp=mol_logp(m);
+
+query IIIII
+SELECT m, exactmw, tpsa, amw, logp FROM molecules;
 ----
-c1ccccc1	78.04695	0.0	78.11399
-CC	30.04695	0.0	30.07
-CCO	46.041866	20.23	46.069
+c1ccccc1	78.04695	0.0	78.11399	1.6866
+CC	30.04695	0.0	30.07	1.0262
+CCO	46.041866	20.23	46.069	-0.0014000000000000123
 
 
