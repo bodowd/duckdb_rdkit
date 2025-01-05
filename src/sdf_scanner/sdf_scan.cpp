@@ -45,6 +45,7 @@ SDFScanGlobalState::SDFScanGlobalState(ClientContext &context_p,
   //! open the sd file
   mol_supplier =
       make_uniq<RDKit::v2::FileParsers::SDMolSupplier>(bind_data.files[0]);
+  length = mol_supplier->length();
 }
 
 SDFScanLocalState::SDFScanLocalState(ClientContext &context_p,
@@ -66,11 +67,9 @@ void SDFScanLocalState::ExtractNextChunk(SDFScanGlobalState &gstate,
   lstate.scan_count = 0;
   lstate.rows.clear();
 
-  auto len = gstate.mol_supplier->length();
-  std::cout << len << std::endl;
   while (lstate.scan_count < STANDARD_VECTOR_SIZE &&
          !gstate.mol_supplier->atEnd()) {
-    auto remaining = len - lstate.scan_count;
+    auto remaining = gstate.length - lstate.scan_count;
     if (remaining == 0) {
       break;
     }

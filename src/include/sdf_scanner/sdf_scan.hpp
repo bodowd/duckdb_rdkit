@@ -40,6 +40,8 @@ public:
   //! Bound data
   const SDFScanData &bind_data;
   unique_ptr<RDKit::v2::FileParsers::SDMolSupplier> mol_supplier;
+  //! the number of records in the SDF file
+  idx_t length;
 
   //! Column names that we're actually reading (after projection pushdown)
   vector<string> names;
