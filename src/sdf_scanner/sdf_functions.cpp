@@ -21,25 +21,23 @@ static void ReadSDFFunction(ClientContext &context, TableFunctionInput &data_p,
   auto bind_data = data_p.bind_data->Cast<SDFScanData>();
 
   lstate.ExtractNextChunk(gstate, lstate, bind_data);
-  std::cout << "COUNT: " << lstate.scan_count << std::endl;
 
   D_ASSERT(lstate.scan_count == lstate.rows.size());
   // set to the number of rows returned
   output.SetCardinality(lstate.scan_count);
-
-  std::cout << "number of tuples: " << output.size() << std::endl;
-  std::cout << "number of columns: " << output.data.size() << std::endl;
 
   //! For each record scanned, set the value of each
   //! column in the output DataChunk
   for (idx_t i = 0; i < lstate.rows.size(); i++) {
     for (idx_t j = 0; j < bind_data.names.size(); j++) {
       auto val = lstate.rows[i][j];
-      output.SetValue(j, i, Value(val));
+      if (val == "") {
+        output.SetValue(j, i, Value(nullptr));
+      } else {
+        output.SetValue(j, i, Value(val));
+      }
     }
   }
-  // std::cout << output.ToString() << std::endl;
-  std::cout << output.ColumnCount() << std::endl;
   /// NOTE: everything is just string_t right now
   /// make sure to declare only VARCHAR in COLUMNS
   /// Perhaps, don't even make it an option for the first iteration

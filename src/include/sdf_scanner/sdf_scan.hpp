@@ -42,6 +42,9 @@ public:
   unique_ptr<RDKit::v2::FileParsers::SDMolSupplier> mol_supplier;
   //! the number of records in the SDF file
   idx_t length;
+  //! The record number of the last record we have scanned in the SDF file;
+  //! where we are in the SDF
+  idx_t offset;
 
   //! Column names that we're actually reading (after projection pushdown)
   vector<string> names;

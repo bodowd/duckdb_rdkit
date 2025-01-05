@@ -46,6 +46,7 @@ SDFScanGlobalState::SDFScanGlobalState(ClientContext &context_p,
   mol_supplier =
       make_uniq<RDKit::v2::FileParsers::SDMolSupplier>(bind_data.files[0]);
   length = mol_supplier->length();
+  offset = 0;
 }
 
 SDFScanLocalState::SDFScanLocalState(ClientContext &context_p,
@@ -77,22 +78,29 @@ void SDFScanLocalState::ExtractNextChunk(SDFScanGlobalState &gstate,
     vector<string> cur_row;
     //! If there are no more records in the file, cur will be none, and the
     //! scan will be complete.
-    auto cur_record = gstate.mol_supplier->next();
-    if (cur_record) {
-      //! Go through each column specified and store the property in a vector
-      //! This represents one row in the "table".
-      for (idx_t i = 0; i < bind_data.names.size(); i++) {
+    auto cur_mol = gstate.mol_supplier->next();
+    //! Go through each column specified and store the property in a vector
+    //! This represents one row in the "table".
+    for (idx_t i = 0; i < bind_data.names.size(); i++) {
+      //! NOTE: using the RDKit MolSupplier, if the record cannot be parsed, it
+      //! is because the molecule cannot be parsed. The other columns are
+      //! probably not null, but right now nothing of that record is
+      //! stored because that cannot be accessed with the way the MolSupplier
+      //! is implemented.
+      //! TODO: write a parser to parse the non-molecule parts of the SDF.
+      //! This may enable filter pushdown and also allow the other fields
+      //! to be returned even if the molecule cannot be parsed
+      if (cur_mol) {
         std::string prop;
-        cur_record->getPropIfPresent(bind_data.names[i], prop);
+        cur_mol->getPropIfPresent(bind_data.names[i], prop);
         cur_row.emplace_back(prop);
+      } else {
+        cur_row.emplace_back("");
       }
-      lstate.rows.emplace_back(cur_row);
-      lstate.scan_count++;
-    } else {
-      std::cout << "could not convert "
-                << gstate.mol_supplier->getItemText(lstate.scan_count)
-                << std::endl;
     }
+    lstate.rows.emplace_back(cur_row);
+    lstate.scan_count++;
+    gstate.offset++;
   }
 }
 
