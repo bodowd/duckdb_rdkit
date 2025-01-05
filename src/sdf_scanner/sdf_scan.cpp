@@ -2,7 +2,9 @@
 #include "duckdb/common/allocator.hpp"
 #include "duckdb/common/helper.hpp"
 #include "duckdb/common/multi_file_reader.hpp"
+#include "duckdb/common/types.hpp"
 #include "duckdb/common/unique_ptr.hpp"
+#include "duckdb/common/vector_size.hpp"
 #include "duckdb/function/table_function.hpp"
 #include "duckdb/main/client_context.hpp"
 #include <memory>
@@ -53,12 +55,46 @@ SDFGlobalTableFunctionState::SDFGlobalTableFunctionState(
     ClientContext &context, TableFunctionInitInput &input)
     : state(context, input.bind_data->Cast<SDFScanData>()) {}
 
-void SDFScanLocalState::ReadNext(SDFScanGlobalState &gstate) {
-  cur_mol = gstate.mol_supplier->next();
-  std::string tmp;
-  cur_mol->getPropIfPresent("ChEBI Name", tmp);
+void SDFScanLocalState::ExtractNextChunk(SDFScanGlobalState &gstate,
+                                         SDFScanLocalState &lstate,
+                                         SDFScanData &bind_data) {
 
-  std::cout << "!!!!!!!! In read next: " << tmp << std::endl;
+  //! this holds the number of records scanned
+  //! reset to zero each time this function is called
+  //! If nothing gets scanned, the scan_count will be just zero
+  //! and duckdb will be signalled that the scanning is complete
+  lstate.scan_count = 0;
+  lstate.rows.clear();
+
+  auto len = gstate.mol_supplier->length();
+  std::cout << len << std::endl;
+  while (lstate.scan_count < STANDARD_VECTOR_SIZE &&
+         !gstate.mol_supplier->atEnd()) {
+    auto remaining = len - lstate.scan_count;
+    if (remaining == 0) {
+      break;
+    }
+
+    vector<string> cur_row;
+    //! If there are no more records in the file, cur will be none, and the
+    //! scan will be complete.
+    auto cur_record = gstate.mol_supplier->next();
+    if (cur_record) {
+      //! Go through each column specified and store the property in a vector
+      //! This represents one row in the "table".
+      for (idx_t i = 0; i < bind_data.names.size(); i++) {
+        std::string prop;
+        cur_record->getPropIfPresent(bind_data.names[i], prop);
+        cur_row.emplace_back(prop);
+      }
+      lstate.rows.emplace_back(cur_row);
+      lstate.scan_count++;
+    } else {
+      std::cout << "could not convert "
+                << gstate.mol_supplier->getItemText(lstate.scan_count)
+                << std::endl;
+    }
+  }
 }
 
 SDFLocalTableFunctionState::SDFLocalTableFunctionState(

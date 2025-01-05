@@ -41,27 +41,8 @@ public:
   const SDFScanData &bind_data;
   unique_ptr<RDKit::v2::FileParsers::SDMolSupplier> mol_supplier;
 
-  //! Buffer manager allocator
-  // Allocator &allocator;
-  //! The current buffer capacity
-  // idx_t buffer_capacity;
-
   //! Column names that we're actually reading (after projection pushdown)
   vector<string> names;
-  vector<column_t> column_ids;
-  // vector<ColumnIndex> column_indices;
-
-  mutex lock;
-  //! One SDF reader per file
-  // vector<optional_ptr<PlainSDFReader>> sdf_readers;
-  //! Current file/batch index
-  // atomic<idx_t> file_index;
-  // atomic<idx_t> batch_index;
-
-  //! Current number of threads active
-  // idx_t system_threads;
-  //! Whether we enable parallel scans (only if less files than threads)
-  // bool enable_parallel_scans;
 };
 
 struct SDFScanLocalState {
@@ -69,67 +50,29 @@ public:
   SDFScanLocalState(ClientContext &context, SDFScanGlobalState &gstate);
 
 public:
-  void ReadNext(SDFScanGlobalState &gstate);
-
-  const MultiFileReaderData &GetReaderData() const;
+  //! Retrieves the next chunk of SDF records from the global state
+  //! and populates the local state with its properties.
+  //! If a molecule is available, its properties are extracted and stored in
+  //! `lstate.properties`, and `lstate.scan_count` is incremented. If no
+  //! molecule is available, logs a failure message and leaves
+  //! `lstate.scan_count` at zero.
+  void ExtractNextChunk(SDFScanGlobalState &gstate, SDFScanLocalState &lstate,
+                        SDFScanData &bind_data);
 
 public:
-  //! Current scan data
+  //! The number of records successfully scanned from the SDF.
+  //! This is used to indicate duckdb the number of rows
+  //! returned by the scanning function. If this value is zero, duckdb will then
+  //! know to not call the function again. That will end the scan.
   idx_t scan_count;
-  //! The current molecule that has been read by the mol_supplier
-  unique_ptr<RDKit::ROMol> cur_mol;
 
-  //! The properties of the current record
-  vector<string> properties;
-  // string units[STANDARD_VECTOR_SIZE];
-
-  //! Batch index for order-preserving parallelism
-  // idx_t batch_index;
-
-  //! For determining average tuple size
-  // idx_t total_read_size;
-  // idx_t total_tuple_count;
-
-private:
-  AllocatedData AllocateBuffer(SDFScanGlobalState &gstate);
-
-  void ParseNextChunk(SDFScanGlobalState &gstate);
-
-  void ParseSDF(const idx_t sdf_start, const idx_t sdf_size,
-                const idx_t remaining);
-  void ThrowObjectSizeError(const idx_t object_size);
-
-  //! Must hold the lock
-  void TryIncrementFileIndex(SDFScanGlobalState &gstate) const;
-  bool IsParallel(SDFScanGlobalState &gstate) const;
+  //! The properties for each record in the current chunk of records being
+  //! scanned. Each record is a "row", each property is a "column"
+  vector<vector<string>> rows;
 
 private:
   //! Bind data
   const SDFScanData &bind_data;
-  //! Thread-local allocator
-  // Allocator &allocator;
-
-  //! Current reader and buffer handle
-  // optional_ptr<PlainSDFReader> current_reader;
-  //! Whether this is the last batch of the file
-  // bool is_last;
-
-  //! The current main filesystem
-  // FileSystem &fs;
-
-  //! For some filesystems (e.g. S3), using a filehandle per thread increases
-  //! performance
-  // unique_ptr<FileHandle> thread_local_filehandle;
-
-  //! Current buffer read info
-  // char *buffer_ptr;
-  // idx_t buffer_size;
-  // idx_t buffer_offset;
-  // idx_t prev_buffer_remainder;
-  // idx_t lines_or_objects_in_buffer;
-
-  //! Buffer to reconstruct split values
-  // AllocatedData reconstruct_buffer;
 };
 
 struct SDFGlobalTableFunctionState : public GlobalTableFunctionState {
@@ -138,7 +81,6 @@ public:
                               TableFunctionInitInput &input);
   static unique_ptr<GlobalTableFunctionState>
   Init(ClientContext &context, TableFunctionInitInput &input);
-  // idx_t MaxThreads() const override;
 
 public:
   SDFScanGlobalState state;

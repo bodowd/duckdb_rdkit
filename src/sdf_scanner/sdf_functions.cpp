@@ -13,92 +13,38 @@
 
 namespace duckdb {
 
-void ExtractNextChunk(SDFScanGlobalState &gstate, SDFScanLocalState &lstate,
-                      SDFScanData &bind_data) {
-  auto cur = gstate.mol_supplier->next();
-  //! this holds the number of records scanned
-  //! reset to zero each time this function is called
-  //! If nothing gets scanned, the scan_count will be just zero
-  lstate.scan_count = 0;
-  lstate.properties.clear();
-  if (cur) {
-    for (idx_t i = 0; i < bind_data.names.size(); i++) {
-      std::string prop;
-      std::cout << bind_data.names[i] << std::endl;
-      cur->getPropIfPresent(bind_data.names[i], prop);
-      std::cout << prop << std::endl;
-      lstate.properties.emplace_back(prop);
-      std::cout << lstate.properties[i] << std::endl;
-    }
-    lstate.scan_count++;
-  } else {
-    std::cout << "could not convert "
-              << gstate.mol_supplier->getItemText(lstate.scan_count)
-              << std::endl;
-  }
-}
-
 static void ReadSDFFunction(ClientContext &context, TableFunctionInput &data_p,
                             DataChunk &output) {
 
   auto &gstate = data_p.global_state->Cast<SDFGlobalTableFunctionState>().state;
   auto &lstate = data_p.local_state->Cast<SDFLocalTableFunctionState>().state;
   auto bind_data = data_p.bind_data->Cast<SDFScanData>();
-  // auto offset = lstate.scan_count;
-  // auto count = MinValue<idx_t>(STANDARD_VECTOR_SIZE, 10 - offset);
-  ExtractNextChunk(gstate, lstate, bind_data);
+
+  lstate.ExtractNextChunk(gstate, lstate, bind_data);
   std::cout << "COUNT: " << lstate.scan_count << std::endl;
 
+  D_ASSERT(lstate.scan_count == lstate.rows.size());
   // set to the number of rows returned
   output.SetCardinality(lstate.scan_count);
 
-  // If SetCardinality is > 0, it goes in an infinite loop
-  // mol_supplier.close();
   std::cout << "number of tuples: " << output.size() << std::endl;
   std::cout << "number of columns: " << output.data.size() << std::endl;
-  if (lstate.properties.size() > 0) {
 
-    for (idx_t i = 0; i < bind_data.names.size(); i++) {
-      auto k = lstate.properties[i];
-      std::cout << "bind data " << i << ": " << bind_data.names[i] << std::endl;
-      std::cout << "PROPERTY " << i << ": " << k << std::endl;
-      output.SetValue(i, 0, Value(k));
+  //! For each record scanned, set the value of each
+  //! column in the output DataChunk
+  for (idx_t i = 0; i < lstate.rows.size(); i++) {
+    for (idx_t j = 0; j < bind_data.names.size(); j++) {
+      auto val = lstate.rows[i][j];
+      output.SetValue(j, i, Value(val));
     }
   }
-  std::cout << output.ToString() << std::endl;
+  // std::cout << output.ToString() << std::endl;
   std::cout << output.ColumnCount() << std::endl;
   /// NOTE: everything is just string_t right now
   /// make sure to declare only VARCHAR in COLUMNS
   /// Perhaps, don't even make it an option for the first iteration
   /// Just make it default all VARCHAR. So user could just specify
   /// COLUMNS=[names, of, columns] ?
-  ///
-  // auto data = FlatVector::GetData<string_t>(output.data[0]);
-  // auto &validity = FlatVector::Validity(output.data[0]);
-  //
-  // std::cout << data->GetString() << std::endl;
-  // FlatVector::SetData(output.data[1], output.data[1].GetData());
-  // auto data1 = FlatVector::GetData<string_t>(output.data[1]);
-  // auto &validity1 = FlatVector::Validity(output.data[1]);
-  //
-  // std::cout << data1->GetString() << std::endl;
-
-  // Left off at: why it doesn't return as rows in the query?
-
-  // MultiFileConstantEntry entry(0, output.data[0].GetValue(0));
-  // MultiFileConstantEntry entry1(1, output.data[1].GetValue(0));
-  // vector<MultiFileConstantEntry> constant_map;
-  // constant_map.emplace_back(entry);
-  // constant_map.emplace_back(entry1);
-  //
-  // MultiFileReaderData reader_data;
-  // reader_data.constant_map = constant_map;
-  // MultiFileReaderBindData reader_bind;
-  // if (output.size() != 0) {
-  //   MultiFileReader().FinalizeChunk(context, reader_bind, reader_data,
-  //   output,
-  //                                   nullptr);
-  // }
 }
 
 unique_ptr<FunctionData> ReadSDFBind(ClientContext &context,
