@@ -107,21 +107,4 @@ SDFLocalTableFunctionState::SDFLocalTableFunctionState(
     ClientContext &context_p, SDFScanGlobalState &gstate_p)
     : state(context_p, gstate_p) {}
 
-//
-// unique_ptr<LocalTableFunctionState>
-// SDFLocalTableFunctionState::Init(ExecutionContext &context_p,
-//                                  TableFunctionInitInput &input_p,
-//                                  GlobalTableFunctionState *global_state_p)
-//                                  {
-//   auto &gstate = global_state_p->Cast<SDFGlobalTableFunctionState>();
-//   auto result =
-//       make_uniq<SDFLocalTableFunctionState>(context_p.client,
-//       gstate.state);
-//   return std::move(result);
-// }
-//
-// idx_t SDFLocalTableFunctionState::GetBatchIndex() const {
-//   return state.batch_index;
-// }
-//
 } // namespace duckdb

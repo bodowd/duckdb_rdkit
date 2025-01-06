@@ -100,10 +100,6 @@ unique_ptr<FunctionData> ReadSDFBind(ClientContext &context,
 
   //! get the files
   SimpleMultiFileList file_list(std::move(bind_data->files));
-  //! TODO: should I use the multi file reader or use the SDF Mol Supplier?
-  // MultiFileReader().BindOptions(bind_data->file_options, file_list,
-  //                               return_types, names,
-  //                               bind_data->reader_bind);
   bind_data->files = file_list.GetAllFiles();
   if (bind_data->files.size() > 1) {
     throw NotImplementedException(

@@ -9,8 +9,6 @@
 #include "duckdb/function/function_set.hpp"
 #include "duckdb/function/table_function.hpp"
 #include "duckdb/main/client_context.hpp"
-#include "sdf_scanner/buffered_sdf_reader.hpp"
-#include "sdf_scanner/plain_sdf_reader.hpp"
 namespace duckdb {
 
 //! The code here is based off the duckdb JSON extension
@@ -21,15 +19,10 @@ public:
 
   void Bind(ClientContext &context, TableFunctionBindInput &input);
 
-  //! Multi-file reader stuff
-  MultiFileReaderBindData reader_bind;
   //! The files we're reading
   vector<string> files;
-  //! Multi-file reader options
-  MultiFileReaderOptions file_options;
   //! All column names (in order) specified by the query for projection
   vector<string> names;
-  idx_t maximum_object_size = 16777216;
 };
 
 struct SDFScanGlobalState {
@@ -99,52 +92,9 @@ public:
   static unique_ptr<LocalTableFunctionState>
   Init(ExecutionContext &context, TableFunctionInitInput &input,
        GlobalTableFunctionState *global_state);
-  idx_t GetBatchIndex() const;
 
 public:
   SDFScanLocalState state;
-};
-
-class SDFScanFunction {
-public:
-  static TableFunctionSet GetFunctionSet();
-
-  static void SDFScanImplementation(ClientContext &context,
-                                    TableFunctionInput &data_p,
-                                    DataChunk &output);
-
-  static unique_ptr<FunctionData> SDFScanBind(ClientContext &context,
-                                              TableFunctionBindInput &input,
-                                              vector<LogicalType> &return_types,
-                                              vector<string> &names);
-
-  static unique_ptr<GlobalTableFunctionState>
-  SDFScanInitGlobal(ClientContext &context, TableFunctionInitInput &input);
-
-  static unique_ptr<LocalTableFunctionState>
-  SDFScanInitLocal(ExecutionContext &context, TableFunctionInitInput &input,
-                   GlobalTableFunctionState *gstate);
-
-private:
-};
-
-struct SDFReadBindData : public TableFunctionData {
-  shared_ptr<MultiFileList> file_list;
-  unique_ptr<MultiFileReader> multi_file_reader;
-  vector<string> names;
-  vector<LogicalType> types;
-};
-
-struct SDFReadGlobalState : public GlobalTableFunctionState {
-  explicit SDFReadGlobalState();
-  mutex lock;
-  vector<idx_t> projection_ids;
-  optional_ptr<TableFilterSet> filters;
-  //! The file list to scan
-  MultiFileList &file_list;
-  //! The scan over the file_list
-  MultiFileListScanData file_list_scan;
-  unique_ptr<MultiFileReaderGlobalState> multi_file_reader_state;
 };
 
 } // namespace duckdb
