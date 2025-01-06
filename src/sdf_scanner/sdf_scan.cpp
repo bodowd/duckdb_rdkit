@@ -61,8 +61,9 @@ void SDFScanLocalState::ExtractNextChunk(SDFScanGlobalState &gstate,
                                          SDFScanLocalState &lstate,
                                          SDFScanData &bind_data) {
 
-  //! this holds the number of records scanned
-  //! reset to zero each time this function is called
+  //! This holds the number of records scanned in this current
+  //! function call.
+  //! Reset to zero each time this function is called.
   //! If nothing gets scanned, the scan_count will be just zero
   //! and duckdb will be signalled that the scanning is complete
   lstate.scan_count = 0;
@@ -76,8 +77,6 @@ void SDFScanLocalState::ExtractNextChunk(SDFScanGlobalState &gstate,
     }
 
     vector<string> cur_row;
-    //! If there are no more records in the file, cur will be none, and the
-    //! scan will be complete.
     auto cur_mol = gstate.mol_supplier->next();
     //! Go through each column specified and store the property in a vector
     //! This represents one row in the "table".

@@ -58,21 +58,22 @@ public:
   //! Retrieves the next chunk of SDF records from the global state
   //! and populates the local state with its properties.
   //! If a molecule is available, its properties are extracted and stored in
-  //! `lstate.properties`, and `lstate.scan_count` is incremented. If no
-  //! molecule is available, logs a failure message and leaves
-  //! `lstate.scan_count` at zero.
+  //! the local state. The number of records scanned is also incremented
+  //! accordingly, and stored in the local state.
   void ExtractNextChunk(SDFScanGlobalState &gstate, SDFScanLocalState &lstate,
                         SDFScanData &bind_data);
 
 public:
   //! The number of records successfully scanned from the SDF.
-  //! This is used to indicate duckdb the number of rows
+  //! This is used to indicate to duckdb the number of rows
   //! returned by the scanning function. If this value is zero, duckdb will then
   //! know to not call the function again. That will end the scan.
   idx_t scan_count;
 
   //! The properties for each record in the current chunk of records being
-  //! scanned. Each record is a "row", each property is a "column"
+  //! scanned. Each record is a "row", each property is a "column". The outer
+  //! vector is a vector of "rows" (the inner vector). Each entry in the inner
+  //! vector is a "column", or property extracted from the SDF fields
   vector<vector<string>> rows;
 
 private:
