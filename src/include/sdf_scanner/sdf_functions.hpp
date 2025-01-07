@@ -7,6 +7,6 @@ public:
   static vector<TableFunctionSet> GetTableFunctions();
 
 private:
-  static TableFunctionSet GetReadSDFFunction();
+  static TableFunctionSet GetReadSDFTableFunction();
 };
 } // namespace duckdb

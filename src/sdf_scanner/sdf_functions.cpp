@@ -112,24 +112,18 @@ unique_ptr<FunctionData> ReadSDFBind(ClientContext &context,
 vector<TableFunctionSet> SDFFunctions::GetTableFunctions() {
   vector<TableFunctionSet> functions;
 
-  functions.push_back(GetReadSDFFunction());
+  functions.push_back(GetReadSDFTableFunction());
 
   return functions;
 }
 
-TableFunction GetReadSDFTableFunction() {
+TableFunctionSet SDFFunctions::GetReadSDFTableFunction() {
   TableFunction table_function({LogicalType::VARCHAR}, ReadSDFFunction,
                                ReadSDFBind, SDFGlobalTableFunctionState::Init,
                                SDFLocalTableFunctionState::Init);
   table_function.name = "read_sdf";
   table_function.named_parameters["columns"] = LogicalType::ANY;
-
-  return table_function;
-}
-
-TableFunctionSet SDFFunctions::GetReadSDFFunction() {
-
-  auto table_function = GetReadSDFTableFunction();
+  table_function.table_scan_progress = SDFScan::ScanProgress;
   return MultiFileReader::CreateFunctionSet(table_function);
 }
 
