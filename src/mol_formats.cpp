@@ -103,13 +103,13 @@ void mol_from_smiles(DataChunk &args, ExpressionState &state, Vector &result) {
 void RegisterFormatFunctions(DatabaseInstance &instance) {
   // Register scalar functions
   ScalarFunctionSet mol_from_smiles_set("mol_from_smiles");
-  mol_from_smiles_set.AddFunction(ScalarFunction(
-      {LogicalType::VARCHAR}, duckdb_rdkit::Mol(), mol_from_smiles));
+  mol_from_smiles_set.AddFunction(
+      ScalarFunction({LogicalType::VARCHAR}, Mol(), mol_from_smiles));
   ExtensionUtil::RegisterFunction(instance, mol_from_smiles_set);
 
   ScalarFunctionSet mol_to_smiles_set("mol_to_smiles");
-  mol_to_smiles_set.AddFunction(ScalarFunction(
-      {duckdb_rdkit::Mol()}, LogicalType::VARCHAR, mol_to_smiles));
+  mol_to_smiles_set.AddFunction(
+      ScalarFunction({Mol()}, LogicalType::VARCHAR, mol_to_smiles));
   ExtensionUtil::RegisterFunction(instance, mol_to_smiles_set);
 }
 
