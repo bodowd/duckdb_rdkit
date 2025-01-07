@@ -97,4 +97,11 @@ public:
   SDFScanLocalState state;
 };
 
+struct SDFScan {
+public:
+  static double ScanProgress(ClientContext &context,
+                             const FunctionData *bind_data_p,
+                             const GlobalTableFunctionState *global_state);
+};
+
 } // namespace duckdb

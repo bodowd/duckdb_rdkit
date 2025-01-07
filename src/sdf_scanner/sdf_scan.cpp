@@ -107,4 +107,10 @@ SDFLocalTableFunctionState::SDFLocalTableFunctionState(
     ClientContext &context_p, SDFScanGlobalState &gstate_p)
     : state(context_p, gstate_p) {}
 
+double SDFScan::ScanProgress(ClientContext &, const FunctionData *,
+                             const GlobalTableFunctionState *global_state) {
+  auto &gstate = global_state->Cast<SDFGlobalTableFunctionState>().state;
+  return 100.0 * (double)gstate.offset / (double)gstate.length;
+}
+
 } // namespace duckdb
