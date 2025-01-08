@@ -17,7 +17,7 @@ LogicalType Mol() {
 
 void RegisterTypes(DatabaseInstance &instance) {
   // Register Mol type
-  ExtensionUtil::RegisterType(instance, "Mol", duckdb_rdkit::Mol());
+  ExtensionUtil::RegisterType(instance, "Mol", Mol());
 }
 
 } // namespace duckdb_rdkit

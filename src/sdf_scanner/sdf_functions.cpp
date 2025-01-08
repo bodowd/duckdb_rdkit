@@ -1,4 +1,5 @@
 #include "sdf_scanner/sdf_functions.hpp"
+#include "duckdb/common/assert.hpp"
 #include "duckdb/common/enums/vector_type.hpp"
 #include "duckdb/common/multi_file_list.hpp"
 #include "duckdb/common/multi_file_reader.hpp"
@@ -10,6 +11,8 @@
 #include "duckdb/main/client_context.hpp"
 #include "mol_formats.hpp"
 #include "sdf_scanner/sdf_scan.hpp"
+#include "types.hpp"
+#include <iterator>
 
 namespace duckdb {
 
@@ -25,24 +28,36 @@ static void ReadSDFFunction(ClientContext &context, TableFunctionInput &data_p,
   D_ASSERT(lstate.scan_count == lstate.rows.size());
   // set to the number of rows returned
   output.SetCardinality(lstate.scan_count);
+  if (bind_data.mol_col_idx > -1) {
+    //! The mol_col is a reference to the DataChunk vector
+    //! This vector is then converted to a FlatVector with the string_t type
+    //! so that we can add blobs to it, which may have invalid UTF8
+    auto &mol_col = output.data[bind_data.mol_col_idx];
+    auto col_data = FlatVector::GetData<string_t>(mol_col);
+    for (idx_t i = 0; i < lstate.rows.size(); i++) {
+      for (idx_t j = 0; j < bind_data.names.size(); j++) {
+        if (bind_data.mol_col_idx > -1 && j == bind_data.mol_col_idx) {
+          auto val = string_t(lstate.rows[i][j]);
+          col_data[i] = StringVector::AddStringOrBlob(mol_col, val);
+        }
+      }
+    }
+  }
 
-  //! For each record scanned, set the value of each
+  //! For each record/row scanned, set the value of each
   //! column in the output DataChunk
   for (idx_t i = 0; i < lstate.rows.size(); i++) {
     for (idx_t j = 0; j < bind_data.names.size(); j++) {
       auto val = lstate.rows[i][j];
-      if (val == "") {
-        output.SetValue(j, i, Value(nullptr));
-      } else {
-        output.SetValue(j, i, Value(val));
+      if (bind_data.mol_col_idx > -1 && j != bind_data.mol_col_idx) {
+        if (val == "") {
+          output.SetValue(j, i, Value(nullptr));
+        } else {
+          output.SetValue(j, i, Value(val));
+        }
       }
     }
   }
-  /// NOTE: everything is just string_t right now
-  /// make sure to declare only VARCHAR in COLUMNS
-  /// Perhaps, don't even make it an option for the first iteration
-  /// Just make it default all VARCHAR. So user could just specify
-  /// COLUMNS=[names, of, columns] ?
 }
 
 unique_ptr<FunctionData> ReadSDFBind(ClientContext &context,
@@ -71,17 +86,27 @@ unique_ptr<FunctionData> ReadSDFBind(ClientContext &context,
       }
       //! struct_children are the types of the columns
       auto &struct_children = StructValue::GetChildren(kv.second);
+      vector<string> types;
       D_ASSERT(StructType::GetChildCount(child_type) == struct_children.size());
       for (idx_t i = 0; i < struct_children.size(); i++) {
         auto &name = StructType::GetChildName(child_type, i);
-        auto &val = struct_children[i];
+        auto &type = struct_children[i];
         names.push_back(name);
-        if (val.type().id() != LogicalTypeId::VARCHAR) {
+        types.push_back(type.ToString());
+        if (type.type().id() != LogicalTypeId::VARCHAR) {
           throw BinderException("read_sdf \"columns\" parameter type "
                                 "specification must be VARCHAR.");
         }
-        return_types.emplace_back(
-            TransformStringToLogicalType(StringValue::Get(val), context));
+
+        if (type.ToString() == duckdb_rdkit::Mol().ToString()) {
+          bind_data->mol_col_idx = i;
+          return_types.emplace_back(duckdb_rdkit::Mol());
+        } else {
+          //! All columns that are not Mol type should be converted to a normal
+          //! duckdb LogicalType
+          return_types.emplace_back(
+              TransformStringToLogicalType(StringValue::Get(type), context));
+        }
       }
       D_ASSERT(names.size() == return_types.size());
       if (names.empty()) {
@@ -89,6 +114,7 @@ unique_ptr<FunctionData> ReadSDFBind(ClientContext &context,
             "read_sdf \"columns\" parameter needs at least one column.");
       }
       bind_data->names = names;
+      bind_data->types = types;
     }
 
     //! TODO: not implemented yet

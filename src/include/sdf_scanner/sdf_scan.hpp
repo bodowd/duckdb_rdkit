@@ -23,6 +23,19 @@ public:
   vector<string> files;
   //! All column names (in order) specified by the query for projection
   vector<string> names;
+  //! All column types (in order) specified by the query for projection
+  //!
+  //! This is not combined with the names field because the TableFunction
+  //! constructor expects a vector<string> for the column names field
+  //! specifically
+  vector<string> types;
+
+  //! If a Mol type is requested, it is necessary to know what index it is
+  //! in the column vector in order to handle the data differently during
+  //! read of the SDF
+  //! A value of -1 means there is no mol_col_idx set because Mol type was
+  //! not requested
+  short mol_col_idx = -1;
 };
 
 struct SDFScanGlobalState {

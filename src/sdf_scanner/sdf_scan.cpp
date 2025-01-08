@@ -7,6 +7,9 @@
 #include "duckdb/common/vector_size.hpp"
 #include "duckdb/function/table_function.hpp"
 #include "duckdb/main/client_context.hpp"
+#include "mol_formats.hpp"
+#include "types.hpp"
+#include "umbra_mol.hpp"
 #include <memory>
 
 namespace duckdb {
@@ -81,19 +84,30 @@ void SDFScanLocalState::ExtractNextChunk(SDFScanGlobalState &gstate,
     //! Go through each column specified and store the property in a vector
     //! This represents one row in the "table".
     for (idx_t i = 0; i < bind_data.names.size(); i++) {
-      //! NOTE: using the RDKit MolSupplier, if the record cannot be parsed, it
-      //! is because the molecule cannot be parsed. The other columns are
+      //! NOTE: using the RDKit MolSupplier, if the record cannot be parsed,
+      //! it is because the molecule cannot be parsed. The other columns are
       //! probably not null, but right now nothing of that record is
       //! stored because that cannot be accessed with the way the MolSupplier
       //! is implemented.
+      //!
       //! TODO: write a parser to parse the non-molecule parts of the SDF.
       //! This may enable filter pushdown and also allow the other fields
       //! to be returned even if the molecule cannot be parsed
       if (cur_mol) {
-        std::string prop;
-        cur_mol->getPropIfPresent(bind_data.names[i], prop);
-        cur_row.emplace_back(prop);
+        //! The column at the current iteration of i is the Mol type
+        //! In this case, we should convert the molecule object
+        //! to the "umbra" mol in duckdb_rdkit
+        if (bind_data.types[i] == duckdb_rdkit::Mol().ToString()) {
+          auto res = duckdb_rdkit::get_umbra_mol_string(*cur_mol);
+          cur_row.emplace_back(res);
+        } else {
+          //! Otherwise, it is a normal property column
+          std::string prop;
+          cur_mol->getPropIfPresent(bind_data.names[i], prop);
+          cur_row.emplace_back(prop);
+        }
       } else {
+        std::cout << "NO MOL: " << gstate.offset << std::endl;
         cur_row.emplace_back("");
       }
     }
@@ -101,6 +115,9 @@ void SDFScanLocalState::ExtractNextChunk(SDFScanGlobalState &gstate,
     lstate.scan_count++;
     gstate.offset++;
   }
+  std::cout << gstate.offset << std::endl;
+  std::cout << gstate.length << std::endl;
+  std::cout << lstate.rows.size() << std::endl;
 }
 
 SDFLocalTableFunctionState::SDFLocalTableFunctionState(
