@@ -26,7 +26,12 @@ static void ReadSDFFunction(ClientContext &context, TableFunctionInput &data_p,
   lstate.ExtractNextChunk(gstate, lstate, bind_data);
 
   D_ASSERT(lstate.scan_count == lstate.rows.size());
-  // set to the number of rows returned
+  //! set to the number of rows scanned
+  //! If the cardinality is zero, it will signal to duckdb to not run the read
+  //! function anymore because the scan is done. This is not equal to the number
+  //! of rows returned, if perhaps during predicate pushdown, no rows match.
+  //! If we are not done scanning the file, we would need to keep scanning
+  //! to see if there are other records that match the predicate
   output.SetCardinality(lstate.scan_count);
   if (bind_data.mol_col_idx > -1) {
     //! The mol_col is a reference to the DataChunk vector
