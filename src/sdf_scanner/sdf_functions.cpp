@@ -33,28 +33,30 @@ static void ReadSDFFunction(ClientContext &context, TableFunctionInput &data_p,
   //! If we are not done scanning the file, we would need to keep scanning
   //! to see if there are other records that match the predicate
   output.SetCardinality(lstate.scan_count);
-  if (bind_data.mol_col_idx > -1) {
-    //! The mol_col is a reference to the DataChunk vector
-    //! This vector is then converted to a FlatVector with the string_t type
-    //! so that we can add blobs to it, which may have invalid UTF8
-    auto &mol_col = output.data[bind_data.mol_col_idx];
-    auto col_data = FlatVector::GetData<string_t>(mol_col);
-    for (idx_t i = 0; i < lstate.rows.size(); i++) {
-      for (idx_t j = 0; j < bind_data.names.size(); j++) {
-        if (bind_data.mol_col_idx > -1 && j == bind_data.mol_col_idx) {
-          auto val = string_t(lstate.rows[i][j]);
-          col_data[i] = StringVector::AddStringOrBlob(mol_col, val);
-        }
-      }
-    }
+
+  //! If the molecule column is not requested, the mol_col_idx flag is set to -1
+  //! This will cause an access error when trying to slice into the vector.
+  //! Therefore, set the index to 0 to avoid the error. The mol_col will not be
+  //! used anyways in this case.
+  if (bind_data.mol_col_idx == -1) {
+    bind_data.mol_col_idx = 0;
   }
+  //! The mol_col is a reference to the DataChunk vector
+  //! This vector is then converted to a FlatVector with the string_t type
+  //! so that we can add blobs to it, which may have invalid UTF8.
+  auto &mol_col = output.data[bind_data.mol_col_idx];
+  auto col_data = FlatVector::GetData<string_t>(mol_col);
 
   //! For each record/row scanned, set the value of each
   //! column in the output DataChunk
   for (idx_t i = 0; i < lstate.rows.size(); i++) {
     for (idx_t j = 0; j < bind_data.names.size(); j++) {
       auto val = lstate.rows[i][j];
-      if (bind_data.mol_col_idx > -1 && j != bind_data.mol_col_idx) {
+      //! handle the molecule column differently because it's a BLOB with
+      //! potentially invalid UTF8
+      if (bind_data.mol_col_idx > -1 && j == bind_data.mol_col_idx) {
+        col_data[i] = StringVector::AddStringOrBlob(mol_col, string_t(val));
+      } else {
         if (val == "") {
           output.SetValue(j, i, Value(nullptr));
         } else {
