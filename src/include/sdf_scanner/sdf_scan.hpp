@@ -1,12 +1,9 @@
 #pragma once
 #include "GraphMol/FileParsers/MolSupplier.h"
-#include "duckdb/common/multi_file_list.hpp"
 #include "duckdb/common/multi_file_reader.hpp"
-#include "duckdb/common/multi_file_reader_options.hpp"
 #include "duckdb/common/unique_ptr.hpp"
 #include "duckdb/execution/execution_context.hpp"
 #include "duckdb/function/function.hpp"
-#include "duckdb/function/function_set.hpp"
 #include "duckdb/function/table_function.hpp"
 #include "duckdb/main/client_context.hpp"
 namespace duckdb {

@@ -1,18 +1,14 @@
 #include "sdf_scanner/sdf_functions.hpp"
 #include "duckdb/common/assert.hpp"
-#include "duckdb/common/enums/vector_type.hpp"
 #include "duckdb/common/multi_file_list.hpp"
 #include "duckdb/common/multi_file_reader.hpp"
-#include "duckdb/common/operator/cast_operators.hpp"
 #include "duckdb/common/types.hpp"
 #include "duckdb/common/types/vector.hpp"
 #include "duckdb/function/function.hpp"
 #include "duckdb/function/table_function.hpp"
 #include "duckdb/main/client_context.hpp"
-#include "mol_formats.hpp"
 #include "sdf_scanner/sdf_scan.hpp"
 #include "types.hpp"
-#include <iterator>
 
 namespace duckdb {
 
