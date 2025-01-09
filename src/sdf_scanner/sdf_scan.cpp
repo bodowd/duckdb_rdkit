@@ -79,6 +79,7 @@ void SDFScanLocalState::ExtractNextChunk(SDFScanGlobalState &gstate,
       break;
     }
 
+    bool printed_warning = false;
     vector<string> cur_row;
     auto cur_mol = gstate.mol_supplier->next();
     //! Go through each column specified and store the property in a vector
@@ -107,7 +108,13 @@ void SDFScanLocalState::ExtractNextChunk(SDFScanGlobalState &gstate,
           cur_row.emplace_back(prop);
         }
       } else {
-        std::cout << "NO MOL: " << gstate.offset << std::endl;
+        //! only print the warning once per record, not once per column
+        //! of the record
+        if (!printed_warning) {
+          std::cout << "Molecule could not be constructed at record #: "
+                    << gstate.offset << std::endl;
+          printed_warning = true;
+        }
         cur_row.emplace_back("");
       }
     }
@@ -115,9 +122,6 @@ void SDFScanLocalState::ExtractNextChunk(SDFScanGlobalState &gstate,
     lstate.scan_count++;
     gstate.offset++;
   }
-  std::cout << gstate.offset << std::endl;
-  std::cout << gstate.length << std::endl;
-  std::cout << lstate.rows.size() << std::endl;
 }
 
 SDFLocalTableFunctionState::SDFLocalTableFunctionState(
