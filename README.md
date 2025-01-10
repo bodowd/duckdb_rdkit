@@ -15,6 +15,13 @@ This extension, duckdb_rdkit, allows you to use RDKit functionality within DuckD
 - `Mol`: an RDKit molecule. Currently, can only be created from a SMILES in a variety of ways: inserting a valid SMILES
   string into a column that expects Mol, type conversion such as 'CC'::mol, or the mol_from_smiles function.
 
+### File formats
+
+- `read_sdf(path/to/file, COLUMNS={'desired_col': 'VARCHAR', mol: 'Mol'})`: execute
+  a SQL query against .sdf files. Can be used to extract, transform, and load data
+  into a duckdb file for faster subsequent queries, or to directly query the
+  sdf to explore the data.
+
 ### Searches
 
 - `is_exact_match(mol1, mol2)`: exact structure search. Returns true if the two molecules are the same. (Chirality sensitive search is not on)
