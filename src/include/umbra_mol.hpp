@@ -1,3 +1,4 @@
+#pragma once
 #include "common.hpp"
 #include "duckdb/common/shared_ptr.hpp"
 #include "duckdb/common/typedefs.hpp"

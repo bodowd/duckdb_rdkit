@@ -1,9 +1,4 @@
-// Quantitative estimation of drug-likeness (QED) is implemented according to
-// the RDKit python implementation.
-//
-// QED paper: Bickerton, G.R.; Paolini, G.V.; Besnard, J.; Muresan, S.; Hopkins,
-// A.L. (2012) 'Quantifying the chemical beauty of drugs', Nature Chemistry, 4,
-// 90-98
+#pragma once
 
 #include <GraphMol/SmilesParse/SmilesParse.h>
 #include <memory>
@@ -11,6 +6,12 @@
 
 namespace duckdb_rdkit {
 
+// Quantitative estimation of drug-likeness (QED) is implemented according to
+// the RDKit python implementation.
+//
+// QED paper: Bickerton, G.R.; Paolini, G.V.; Besnard, J.; Muresan, S.; Hopkins,
+// A.L. (2012) 'Quantifying the chemical beauty of drugs', Nature Chemistry, 4,
+// 90-98
 class QED {
 public:
   QED() {
