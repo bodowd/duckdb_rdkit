@@ -6,6 +6,7 @@
 #include "duckdb/function/function.hpp"
 #include "duckdb/function/table_function.hpp"
 #include "duckdb/main/client_context.hpp"
+
 namespace duckdb {
 
 //! The code here is based off the duckdb JSON extension
@@ -109,6 +110,13 @@ public:
 
 struct SDFScan {
 public:
+  //! Scans the first record of the SDF and assumes that the properties in the
+  //! first are the same for all records. Fills the bind_data names,
+  //! return_types, and types fields with these properties for the reading
+  //! function for projection
+  static void AutoDetect(ClientContext &context, SDFScanData &bind_data,
+                         vector<LogicalType> &return_types,
+                         vector<string> &names);
   static double ScanProgress(ClientContext &context,
                              const FunctionData *bind_data_p,
                              const GlobalTableFunctionState *global_state);
