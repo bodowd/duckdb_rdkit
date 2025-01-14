@@ -3,7 +3,7 @@ require duckdb_rdkit
 
 # successful if no Mol column requested
 query III
-SELECT * FROM read_sdf('test/sql/sdf_test_data/test_sdf.sdf', COLUMNS={'ChEBI ID': 'VARCHAR','ChEBI Name': 'VARCHAR', Star: 'VARCHAR' });
+SELECT * FROM read_sdf('test/sql/sdf_scanner/test_sdf.sdf', COLUMNS={'ChEBI ID': 'VARCHAR','ChEBI Name': 'VARCHAR', Star: 'VARCHAR' });
 ----
 CHEBI:90	(-)-epicatechin	3
 CHEBI:165	(1S,4R)-fenchone	3
@@ -11,7 +11,7 @@ CHEBI:598	1-alkyl-2-acylglycerol	3
 
 # successful if Mol column requested
 query IIII
-SELECT * FROM read_sdf('test/sql/sdf_test_data/test_sdf.sdf', COLUMNS={'ChEBI ID': 'VARCHAR','ChEBI Name': 'VARCHAR', Star: 'VARCHAR', mol: 'Mol'});
+SELECT * FROM read_sdf('test/sql/sdf_scanner/test_sdf.sdf', COLUMNS={'ChEBI ID': 'VARCHAR','ChEBI Name': 'VARCHAR', Star: 'VARCHAR', mol: 'Mol'});
 ----
 CHEBI:90	(-)-epicatechin	3	Oc1cc(O)c2c(c1)O[C@H](c1ccc(O)c(O)c1)[C@H](O)C2
 CHEBI:165	(1S,4R)-fenchone	3	CC1(C)C(=O)[C@@]2(C)CC[C@@H]1C2
@@ -19,8 +19,8 @@ CHEBI:598	1-alkyl-2-acylglycerol	3	*C(=O)OC(CO)CO[1*]
 
 # joins between two sdf files successful
 query IIII
-SELECT first.* FROM read_sdf('test/sql/sdf_test_data/test_sdf.sdf', COLUMNS={'ChEBI ID': 'VARCHAR','ChEBI Name': 'VARCHAR', Star: 'VARCHAR', mol: 'Mol'}) AS first
-INNER JOIN read_sdf('test/sql/sdf_test_data/test_sdf_2.sdf', COLUMNS={'ChEBI ID': 'VARCHAR','ChEBI Name': 'VARCHAR', Star: 'VARCHAR', mol: 'Mol'}) AS second 
+SELECT first.* FROM read_sdf('test/sql/sdf_scanner/test_sdf.sdf', COLUMNS={'ChEBI ID': 'VARCHAR','ChEBI Name': 'VARCHAR', Star: 'VARCHAR', mol: 'Mol'}) AS first
+INNER JOIN read_sdf('test/sql/sdf_scanner/test_sdf_2.sdf', COLUMNS={'ChEBI ID': 'VARCHAR','ChEBI Name': 'VARCHAR', Star: 'VARCHAR', mol: 'Mol'}) AS second 
 ON first.mol=second.mol;
 ----
 CHEBI:90	(-)-epicatechin	3	Oc1cc(O)c2c(c1)O[C@H](c1ccc(O)c(O)c1)[C@H](O)C2
@@ -28,7 +28,7 @@ CHEBI:598	1-alkyl-2-acylglycerol	3	*C(=O)OC(CO)CO[1*]
 
 # etl into duckdb table successful
 statement ok
-CREATE TABLE new_tbl AS SELECT * FROM read_sdf('test/sql/sdf_test_data/test_sdf.sdf', COLUMNS={'ChEBI ID': 'VARCHAR','ChEBI Name': 'VARCHAR', Star: 'VARCHAR', mol: 'Mol'});
+CREATE TABLE new_tbl AS SELECT * FROM read_sdf('test/sql/sdf_scanner/test_sdf.sdf', COLUMNS={'ChEBI ID': 'VARCHAR','ChEBI Name': 'VARCHAR', Star: 'VARCHAR', mol: 'Mol'});
 
 query IIII
 SELECT * FROM new_tbl;
@@ -41,7 +41,7 @@ CHEBI:598	1-alkyl-2-acylglycerol	3	*C(=O)OC(CO)CO[1*]
 # joins betwen sdf file and duckdb table successful
 query IIII
 SELECT new_tbl.* FROM new_tbl
-INNER JOIN read_sdf('test/sql/sdf_test_data/test_sdf_2.sdf', COLUMNS={'ChEBI ID': 'VARCHAR','ChEBI Name': 'VARCHAR', Star: 'VARCHAR', mol: 'Mol'}) AS second 
+INNER JOIN read_sdf('test/sql/sdf_scanner/test_sdf_2.sdf', COLUMNS={'ChEBI ID': 'VARCHAR','ChEBI Name': 'VARCHAR', Star: 'VARCHAR', mol: 'Mol'}) AS second 
 ON new_tbl.mol=second.mol;
 ----
 CHEBI:90	(-)-epicatechin	3	Oc1cc(O)c2c(c1)O[C@H](c1ccc(O)c(O)c1)[C@H](O)C2
