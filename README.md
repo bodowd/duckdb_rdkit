@@ -12,8 +12,14 @@ This extension, duckdb_rdkit, allows you to use RDKit functionality within DuckD
 
 ### Types
 
-- `Mol`: an RDKit molecule. Currently, can only be created from a SMILES in a variety of ways: inserting a valid SMILES
-  string into a column that expects Mol, type conversion such as 'CC'::mol, or the mol_from_smiles function.
+- `Mol`: the internal duckdb_rdkit representation of a RDKit molecule.
+
+  > [!IMPORTANT]  
+  > The duckdb_rdkit molecule representation has additional metadata and cannot
+  > be read directly by RDKit. You will get an error.
+
+  - Currently, can only be created from a SMILES in a variety of ways: inserting a valid SMILES
+    string into a column that expects Mol, type conversion such as 'CC'::mol, or the mol_from_smiles function.
 
 ### File formats
 
