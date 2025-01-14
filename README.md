@@ -14,19 +14,44 @@ This extension, duckdb_rdkit, allows you to use RDKit functionality within DuckD
 
 - `Mol`: the internal duckdb_rdkit representation of a RDKit molecule.
 
-  > [!IMPORTANT]  
-  > The duckdb_rdkit molecule representation has additional metadata and cannot
-  > be read directly by RDKit. You will get an error.
+> [!IMPORTANT]  
+> The duckdb_rdkit molecule representation has additional metadata and cannot
+> be read directly by RDKit. You will get an error.
 
-  - Currently, can only be created from a SMILES in a variety of ways: inserting a valid SMILES
-    string into a column that expects Mol, type conversion such as 'CC'::mol, or the mol_from_smiles function.
+- Currently, can only be created from a SMILES in a variety of ways: inserting a valid SMILES
+  string into a column that expects Mol, type conversion such as 'CC'::mol, or the mol_from_smiles function.
 
 ### File formats
 
-- `read_sdf(path/to/file, COLUMNS={'desired_col': 'VARCHAR', mol: 'Mol'})`: execute
-  a SQL query against .sdf files. Can be used to extract, transform, and load data
+#### SDF
+
+- There are two ways to query `.sdf` files with SQL.
+  Thes can be used to extract, transform, and load data
   into a duckdb file for faster subsequent queries, or to directly query the
   sdf to explore the data.
+
+  - `read_sdf(path/to/sdf/file, COLUMNS={column_name: LogicalType});`
+    Using the `read_sdf` function, the properties of interest in the sdf file
+    can be explicitly defined. If a record does not have the specified property,
+    a null value will be returned. The `'Mol'` type will indicate to the
+    extension that the molecules in the records should be extracted and returned.
+
+    - Example: `SELECT * FROM read_sdf(path/to/file, COLUMNS={desired_col: 'VARCHAR', mol: 'Mol'});`
+
+  - Automatic detection of `sdf` files. This will execute the query against
+    the sdf file when the extension `.sdf` is detected.
+
+    In this case, the extension
+    will guess what the schema is. If the schema is not homogeneous, it is possible
+    that the automatic detection will miss certain properties in the SDF.
+
+    In this case, it is better to use the `read_sdf` function in order to make
+    sure the property of interest is extracted. This is not a problem if the
+    schema is uniform throughout the sdf file.
+
+    The molecule column is named `mol`.
+
+  - Example: `SELECT mol, id FROM 'test.sdf';`
 
 ### Searches
 
