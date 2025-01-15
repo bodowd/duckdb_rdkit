@@ -136,7 +136,8 @@ void SDFScan::AutoDetect(ClientContext &context, SDFScanData &bind_data,
     std::set<string> seen;
     if (cur_mol) {
       for (auto p : cur_mol->getPropList()) {
-        //! These are props that seem to be in every SDF, I think...
+        //! These are props seem to be added by RDKit...these are there
+        //! even if the SDF doesn't contain these properties
         if (p != "__computedProps" && p != "_Name" && p != "_MolFileInfo" &&
             p != "_MolFileComments" && p != "_MolFileChiralFlag" &&
             p != "numArom" && p != "_StereochemDone") {
