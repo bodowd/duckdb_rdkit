@@ -30,6 +30,10 @@ static void LoadInternal(DatabaseInstance &instance) {
   for (auto &fun : SDFFunctions::GetTableFunctions()) {
     ExtensionUtil::RegisterFunction(instance, fun);
   }
+
+  // SDF replacement scan
+  auto &config = DBConfig::GetConfig(instance);
+  config.replacement_scans.emplace_back(SDFFunctions::ReadSDFReplacement);
 }
 
 void DuckdbRdkitExtension::Load(DuckDB &db) { LoadInternal(*db.instance); }

@@ -16,7 +16,7 @@ jobs:
     name: Build extension binaries
     uses: ./.github/workflows/_extension_distribution.yml
     with:
-      duckdb_version: v1.0.0
+      duckdb_version: v1.1.3
       extension_name: duckdb_rdkit
 
   # duckdb-stable-deploy:

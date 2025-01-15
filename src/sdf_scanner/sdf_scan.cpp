@@ -124,6 +124,43 @@ void SDFScanLocalState::ExtractNextChunk(SDFScanGlobalState &gstate,
   }
 }
 
+void SDFScan::AutoDetect(ClientContext &context, SDFScanData &bind_data,
+                         vector<LogicalType> &return_types,
+                         vector<string> &names) {
+  //! open the sd file to scan the first record
+  auto mol_supplier =
+      make_uniq<RDKit::v2::FileParsers::SDMolSupplier>(bind_data.files[0]);
+  while (!mol_supplier->atEnd()) {
+
+    auto cur_mol = mol_supplier->next();
+    std::set<string> seen;
+    if (cur_mol) {
+      for (auto p : cur_mol->getPropList()) {
+        //! These are props seem to be added by RDKit...these are there
+        //! even if the SDF doesn't contain these properties
+        if (p != "__computedProps" && p != "_Name" && p != "_MolFileInfo" &&
+            p != "_MolFileComments" && p != "_MolFileChiralFlag" &&
+            p != "numArom" && p != "_StereochemDone") {
+          names.push_back(p);
+          bind_data.types.emplace_back(
+              LogicalTypeIdToString(LogicalTypeId::VARCHAR));
+          return_types.emplace_back(TransformStringToLogicalType(
+              StringValue::Get("VARCHAR"), context));
+        }
+      }
+      break;
+    }
+  }
+  mol_supplier->close();
+
+  //! The molecule block is not in the getPropList
+  names.push_back("mol");
+  bind_data.types.push_back("Mol");
+  bind_data.mol_col_idx = names.size() - 1;
+  return_types.emplace_back(duckdb_rdkit::Mol());
+  bind_data.names = names;
+}
+
 SDFLocalTableFunctionState::SDFLocalTableFunctionState(
     ClientContext &context_p, SDFScanGlobalState &gstate_p)
     : state(context_p, gstate_p) {}

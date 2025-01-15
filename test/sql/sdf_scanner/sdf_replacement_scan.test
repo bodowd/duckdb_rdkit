@@ -1,0 +1,51 @@
+# Require statement will ensure this test is run with this extension loaded
+require duckdb_rdkit
+
+# successfully returns all columns 
+query IIII
+SELECT * FROM 'test/sql/sdf_scanner/test_sdf.sdf';
+----
+CHEBI:90	(-)-epicatechin	3	Oc1cc(O)c2c(c1)O[C@H](c1ccc(O)c(O)c1)[C@H](O)C2
+CHEBI:165	(1S,4R)-fenchone	3	CC1(C)C(=O)[C@@]2(C)CC[C@@H]1C2
+CHEBI:598	1-alkyl-2-acylglycerol	3	*C(=O)OC(CO)CO[1*]
+
+# successfully projects a column
+query I
+SELECT "ChEBI ID" FROM 'test/sql/sdf_scanner/test_sdf.sdf';
+----
+CHEBI:90
+CHEBI:165
+CHEBI:598
+
+# joins between two sdf files successful
+query IIII
+SELECT first.* FROM 'test/sql/sdf_scanner/test_sdf.sdf' AS first
+INNER JOIN 'test/sql/sdf_scanner/test_sdf_2.sdf' AS second 
+ON first.mol=second.mol;
+----
+CHEBI:90	(-)-epicatechin	3	Oc1cc(O)c2c(c1)O[C@H](c1ccc(O)c(O)c1)[C@H](O)C2
+CHEBI:598	1-alkyl-2-acylglycerol	3	*C(=O)OC(CO)CO[1*]
+
+# etl into duckdb table successful
+statement ok
+CREATE TABLE new_tbl AS SELECT * FROM 'test/sql/sdf_scanner/test_sdf.sdf';
+
+query IIII
+SELECT * FROM new_tbl;
+----
+CHEBI:90	(-)-epicatechin	3	Oc1cc(O)c2c(c1)O[C@H](c1ccc(O)c(O)c1)[C@H](O)C2
+CHEBI:165	(1S,4R)-fenchone	3	CC1(C)C(=O)[C@@]2(C)CC[C@@H]1C2
+CHEBI:598	1-alkyl-2-acylglycerol	3	*C(=O)OC(CO)CO[1*]
+
+
+# joins betwen sdf file and duckdb table successful
+query IIII
+SELECT new_tbl.* FROM new_tbl
+INNER JOIN 'test/sql/sdf_scanner/test_sdf_2.sdf' AS second 
+ON new_tbl.mol=second.mol;
+----
+CHEBI:90	(-)-epicatechin	3	Oc1cc(O)c2c(c1)O[C@H](c1ccc(O)c(O)c1)[C@H](O)C2
+CHEBI:598	1-alkyl-2-acylglycerol	3	*C(=O)OC(CO)CO[1*]
+
+
+
