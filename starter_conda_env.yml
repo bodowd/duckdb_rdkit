@@ -2,6 +2,9 @@ name: RDKit.Build.2
 channels:
   - conda-forge
 dependencies:
+  - librdkit=2024.03.5
+  - librdkit-dev=2024.03.5
+  - rdkit=2024.03.5
   - boost=1.84.0
   - boost-cpp=1.84.0
   - brotli=1.1.0=hb547adb_1
