@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-01-24
+
 ### Added
 
 - `read_sdf` to query sdf files using sql and duckdb
