@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 - `read_sdf` to query sdf files using sql and duckdb
+- sdf replacement scan to automatically detect `.sdf` and execute sql against it
 
 ## [0.2.0] - 2024-10-14
 
