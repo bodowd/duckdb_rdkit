@@ -302,7 +302,7 @@ jobs:
         shell: bash -el {0}
         run: | 
               echo "begin: PATH=$PATH;"     
-              conda env update -n rdkit_build --file starter_conda_env.yml
+              conda env update -n rdkit_build --file linux_conda_env.yml
               conda list | grep boost
 
       - name: Build extension
@@ -423,7 +423,7 @@ jobs:
         shell: bash -el {0}
         run: | 
               echo "begin: PATH=$PATH;"     
-              conda env update -n rdkit_build --file starter_conda_env.yml
+              conda env update -n rdkit_build --file osx_conda_env.yml 
 
       - name: Build extension
         shell: bash -el {0}

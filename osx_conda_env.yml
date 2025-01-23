@@ -1,0 +1,12 @@
+name: RDKit.Build.2
+channels:
+  - conda-forge
+dependencies:
+  - boost=1.84.0
+  - boost-cpp=1.84.0
+  - cmake
+  - rdkit==2024.03.5
+  - eigen==3.4.0
+  - librdkit-dev==2024.03.5
+  - libboost==1.84.0
+
