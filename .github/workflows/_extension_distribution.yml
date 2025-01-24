@@ -29,7 +29,7 @@ on:
         required: false
         type: string
         # have been unable to build the extension on linux_amd64_gcc4
-        default: "linux_amd64_gcc4;linux_arm64;osx_amd64"
+        default: "linux_amd64_gcc4;osx_amd64"
       # Postfix added to artifact names. Can be used to guarantee unique names when this workflow is called multiple times
       artifact_postfix:
         required: false
@@ -305,7 +305,7 @@ jobs:
               conda env update -n rdkit_build --file linux_conda_env.yml
               conda list | grep boost
 
-      - name: Build extension
+      - name: Build and test extension
         shell: bash -el {0}
         env:
           GEN: ninja
@@ -317,12 +317,12 @@ jobs:
             conda info --envs
             gcc --version
             echo "CMAKE_PREFIX_PATH=$CONDA_PREFIX:$CMAKE_PREFIX_PATH" >> $GITHUB_ENV
-            make release
+            make test
 
-      - name: Test extension
-        if: ${{ matrix.duckdb_arch != 'linux_arm64'}}
-        run: |
-          make test
+      # - name: Test extension
+      #   if: ${{ matrix.duckdb_arch != 'linux_arm64'}}
+      #   run: |
+      #     make test
 
       - uses: actions/upload-artifact@v4
         id: artifact-upload
@@ -425,7 +425,7 @@ jobs:
               echo "begin: PATH=$PATH;"     
               conda env update -n rdkit_build --file osx_conda_env.yml 
 
-      - name: Build extension
+      - name: Build and test extension
         shell: bash -el {0}
         env:
           GEN: ninja
@@ -434,7 +434,7 @@ jobs:
             conda activate rdkit_build   
             conda info --envs
             echo "CMAKE_PREFIX_PATH=$CONDA_PREFIX:$CMAKE_PREFIX_PATH" >> $GITHUB_ENV
-            make release
+            make test
 
       - name: ls dir
         run: |
@@ -442,11 +442,11 @@ jobs:
           ls -la build/release/extension
           ls -la build/release/extension/duckdb_rdkit
 
-      - name: Test Extension
-        # if: ${{ matrix.osx_build_arch == 'x86_64'}}
-        shell: bash
-        run: |
-          make test
+      # - name: Test Extension
+      #   # if: ${{ matrix.osx_build_arch == 'x86_64'}}
+      #   shell: bash
+      #   run: |
+      #     make test
 
       - uses: actions/upload-artifact@v4
         id: artifact-upload
