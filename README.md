@@ -116,13 +116,15 @@ The easiest way to install RDKit is with conda, and I used [miniforge](https://g
 
 After installing conda, you can create a new
 conda environment and then install the packages needed.
-As of August 2024, I found installing these packages worked (librdkit-dev seems to have the relevant header files).
+`linux_conda_env.yml` or `osx_conda_env.yml` can be used to create a conda
+environment for building the extension.
 
 ```shell
 # activate your conda env and then in your conda env run:
 conda create -n rdkit_dev
 conda activate rdkit_dev
-conda install -c conda-forge -y boost-cpp boost cmake rdkit eigen librdkit-dev
+# or use the osx_conda_env.yml if you are on osx
+conda env update -f linux_conda_env.yml
 ```
 
 After installing the prerequisite software, you can run:
