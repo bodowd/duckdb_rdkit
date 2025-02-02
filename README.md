@@ -6,7 +6,8 @@ This repository is based on https://github.com/duckdb/extension-template, check 
 
 ---
 
-This extension, duckdb_rdkit, allows you to use RDKit functionality within DuckDB.
+This extension, duckdb_rdkit, integrates RDKit into DuckDB to enable you to do
+cheminformatics work with DuckDB.
 
 ## Currently supported functionality:
 
