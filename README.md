@@ -16,7 +16,8 @@ This extension, duckdb_rdkit, allows you to use RDKit functionality within DuckD
 
 > [!IMPORTANT]  
 > The duckdb_rdkit molecule representation has additional metadata and cannot
-> be read directly by RDKit. You will get an error.
+> be read directly by RDKit. You will get an error. You can use `mol_to_rdkit_mol`
+> to convert the duckdb_rdkit molecule representation into one that is RDKit compatible.
 
 - Currently, can only be created from a SMILES in a variety of ways: inserting a valid SMILES
   string into a column that expects Mol, type conversion such as 'CC'::mol, or the mol_from_smiles function.
@@ -66,6 +67,11 @@ This extension, duckdb_rdkit, allows you to use RDKit functionality within DuckD
 
 - `mol_from_smiles(SMILES)`: returns a molecule for a SMILES string. Returns NULL if mol cannot be made from SMILES
 - `mol_to_smiles(mol)`: returns the SMILES string for a RDKit molecule
+- `mol_to_rdkit_mol(mol)`: returns the binary RDKit molecule in hexadecimal representation
+  - duckdb_rdkit has its own binary representation of molecules, which differs from RDKit’s format.
+    Use this function to extract a molecule from duckdb_rdkit and convert it
+    into a format compatible with RDKit. The returned value can be passed
+    to RDKit's `Chem.Mol` function for further processing in Python.
 
 ### Molecule descriptors
 
