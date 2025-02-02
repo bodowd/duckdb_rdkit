@@ -6,7 +6,8 @@ This repository is based on https://github.com/duckdb/extension-template, check 
 
 ---
 
-This extension, duckdb_rdkit, allows you to use RDKit functionality within DuckDB.
+This extension, duckdb_rdkit, integrates RDKit into DuckDB to enable you to do
+cheminformatics work with DuckDB.
 
 ## Currently supported functionality:
 
@@ -16,7 +17,8 @@ This extension, duckdb_rdkit, allows you to use RDKit functionality within DuckD
 
 > [!IMPORTANT]  
 > The duckdb_rdkit molecule representation has additional metadata and cannot
-> be read directly by RDKit. You will get an error.
+> be read directly by RDKit. You will get an error. You can use `mol_to_rdkit_mol`
+> to convert the duckdb_rdkit molecule representation into one that is RDKit compatible.
 
 - Currently, can only be created from a SMILES in a variety of ways: inserting a valid SMILES
   string into a column that expects Mol, type conversion such as 'CC'::mol, or the mol_from_smiles function.
@@ -66,6 +68,11 @@ This extension, duckdb_rdkit, allows you to use RDKit functionality within DuckD
 
 - `mol_from_smiles(SMILES)`: returns a molecule for a SMILES string. Returns NULL if mol cannot be made from SMILES
 - `mol_to_smiles(mol)`: returns the SMILES string for a RDKit molecule
+- `mol_to_rdkit_mol(mol)`: returns the binary RDKit molecule in hexadecimal representation
+  - duckdb_rdkit has its own binary representation of molecules, which differs from RDKit’s format.
+    Use this function to extract a molecule from duckdb_rdkit and convert it
+    into a format compatible with RDKit. The returned value can be passed
+    to RDKit's `Chem.Mol` function for further processing in Python.
 
 ### Molecule descriptors
 
@@ -110,13 +117,15 @@ The easiest way to install RDKit is with conda, and I used [miniforge](https://g
 
 After installing conda, you can create a new
 conda environment and then install the packages needed.
-As of August 2024, I found installing these packages worked (librdkit-dev seems to have the relevant header files).
+`linux_conda_env.yml` or `osx_conda_env.yml` can be used to create a conda
+environment for building the extension.
 
 ```shell
 # activate your conda env and then in your conda env run:
 conda create -n rdkit_dev
 conda activate rdkit_dev
-conda install -c conda-forge -y boost-cpp boost cmake rdkit eigen librdkit-dev
+# or use the osx_conda_env.yml if you are on osx
+conda env update -f linux_conda_env.yml
 ```
 
 After installing the prerequisite software, you can run:

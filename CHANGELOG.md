@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `mol_to_rdkit_mol` to convert the duckdb_rdkit molecule into a format compatible
+  with RDKit
+
 ## [0.3.0] - 2025-01-24
 
 ### Added

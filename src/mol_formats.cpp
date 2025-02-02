@@ -2,7 +2,9 @@
 #include "common.hpp"
 #include "duckdb/common/string_util.hpp"
 #include "duckdb/common/types.hpp"
+#include "duckdb/execution/expression_executor_state.hpp"
 #include "duckdb/function/function_set.hpp"
+#include "duckdb/main/extension_util.hpp"
 #include "types.hpp"
 #include "umbra_mol.hpp"
 #include <GraphMol/Descriptors/MolDescriptors.h>
@@ -100,6 +102,18 @@ void mol_from_smiles(DataChunk &args, ExpressionState &state, Vector &result) {
       });
 }
 
+void mol_to_rdkit_mol(DataChunk &args, ExpressionState &state, Vector &result) {
+  D_ASSERT(args.data.size() == 1);
+  auto &umbra_mol = args.data[0];
+  auto count = args.size();
+
+  UnaryExecutor::ExecuteWithNulls<string_t, string_t>(
+      umbra_mol, result, count,
+      [&](umbra_mol_t umbra_mol, ValidityMask &mask, idx_t idx) {
+        return StringVector::AddStringOrBlob(result, umbra_mol.GetBinaryMol());
+      });
+}
+
 void RegisterFormatFunctions(DatabaseInstance &instance) {
   // Register scalar functions
   ScalarFunctionSet mol_from_smiles_set("mol_from_smiles");
@@ -111,6 +125,11 @@ void RegisterFormatFunctions(DatabaseInstance &instance) {
   mol_to_smiles_set.AddFunction(
       ScalarFunction({Mol()}, LogicalType::VARCHAR, mol_to_smiles));
   ExtensionUtil::RegisterFunction(instance, mol_to_smiles_set);
+
+  ScalarFunctionSet mol_to_rdkit_mol_set("mol_to_rdkit_mol");
+  mol_to_rdkit_mol_set.AddFunction(
+      ScalarFunction({Mol()}, LogicalType::BLOB, mol_to_rdkit_mol));
+  ExtensionUtil::RegisterFunction(instance, mol_to_rdkit_mol_set);
 }
 
 } // namespace duckdb_rdkit
