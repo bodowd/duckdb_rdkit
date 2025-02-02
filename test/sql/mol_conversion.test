@@ -33,7 +33,7 @@ SELECT mol_from_smiles('NOTASMILES');
 NULL
 
 
-# mol_to_smiles can convert a proper RDKit pickled molecule back to the SMILES
+# mol_to_smiles can convert a binary molecule back to the SMILES
 query I
 SELECT mol_to_smiles(mol_from_smiles('C1=CC=CC=C1'))
 ----
@@ -45,4 +45,10 @@ SELECT 'C1=CC=CC=C1'::mol;
 ----
 c1ccccc1
 
+# mol_to_rdkit_mol can convert the internal representation of a molecule in 
+# duckdb (umbra_mol) to the RDKit molecule.  This will output hex representation
+query I
+SELECT mol_to_rdkit_mol('C'::mol);
+----
+\xEF\xBE\xAD\xDE\x00\x00\x00\x00\x10\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x80\x01\x06\x00@\x00\x00\x00\x04\x0BB\x00\x00\x00\x00\x17\x04\x00\x00\x00\x00\x00\x00\x00\x16
 
