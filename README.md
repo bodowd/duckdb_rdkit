@@ -14,21 +14,21 @@ cheminformatics work with DuckDB.
 ### Types
 
 - `Mol`: the internal duckdb_rdkit representation of a RDKit molecule.
+  - Currently only SMILES can be converted to `Mol`. This can be done with
+    `mol_from_smiles`, or by casts (i.e. inserting a SMILES string into a
+    column that expects `Mol` or `'CC::mol'`).
 
 > [!IMPORTANT]  
 > The duckdb_rdkit molecule representation has additional metadata and cannot
 > be read directly by RDKit. You will get an error. You can use `mol_to_rdkit_mol`
 > to convert the duckdb_rdkit molecule representation into one that is RDKit compatible.
 
-- Currently, can only be created from a SMILES in a variety of ways: inserting a valid SMILES
-  string into a column that expects Mol, type conversion such as 'CC'::mol, or the mol_from_smiles function.
-
 ### File formats
 
 #### SDF
 
 - There are two ways to query `.sdf` files with SQL.
-  Thes can be used to extract, transform, and load data
+  These can be used to extract, transform, and load data
   into a duckdb file for faster subsequent queries, or to directly query the
   sdf to explore the data.
 
