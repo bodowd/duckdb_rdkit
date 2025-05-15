@@ -55,7 +55,7 @@ cheminformatics work with DuckDB.
 
   - Example: `SELECT mol, id FROM 'test.sdf';`
 
-### Searches
+### Molecular comparisons
 
 - `is_exact_match(mol1, mol2)`: exact structure search. Returns true if the two molecules are the same. (Chirality sensitive search is not on)
   - Note: if you are looking for very specific capabilities with exact match with regards
@@ -63,6 +63,8 @@ cheminformatics work with DuckDB.
     might be an option to consider. You would need to write this to your DB and
     then you can do a simple VARCHAR based search on those columns.
 - `is_substruct(mol1, mol2)`: returns true if mol2 is a substructure of mol1.
+- `tanimoto_similarity(mol1, mol2)`: returns the tanimoto similarity between both Morgan Fingerprints (radius=2, nb_bits=2048)
+- `tanimoto_similarity(mol1, mol2, radius, nb_bits)`: returns the tanimoto similarity between both Morgan Fingerprints with specific radius & nb_bits
 
 ### Molecule conversion functions
 
