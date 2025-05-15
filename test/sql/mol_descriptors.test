@@ -3,13 +3,15 @@ require duckdb_rdkit
 
 
 statement ok
-CREATE TABLE molecules (m Mol, exactmw FLOAT, tpsa FLOAT, amw FLOAT, logp FLOAT);
+CREATE TABLE molecules (m Mol, exactmw FLOAT, tpsa FLOAT, amw FLOAT, logp FLOAT, hbd INTEGER, hba INTEGER, num_rotatable_bonds INTEGER);
 
 statement ok 
 INSERT INTO molecules VALUES 
-	(mol_from_smiles('C1=CC=CC=C1'), null, null, null, null),
-	(mol_from_smiles('CC'), null, null, null, null), 
-	(mol_from_smiles('CCO'), null, null, null, null);
+	(mol_from_smiles('C1=CC=CC=C1'), null, null, null, null, null, null, null),
+	(mol_from_smiles('CC'), null, null, null, null, null, null, null), 
+	(mol_from_smiles('CCO'), null, null, null, null, null, null, null),
+	(mol_from_smiles('CS(=O)(=O)Nc1ccncc1-c1ccccc1C(F)(F)F'), null, null, null, null, null, null, null),
+	(mol_from_smiles('COc1ccc(-c2cc(-c3ccc(S(C)(=O)=O)cc3C(F)(F)F)cnc2N)cn1'), null, null, null, null, null, null, null);
 
 statement ok
 UPDATE molecules SET exactmw=mol_exactmw(m);
@@ -23,11 +25,20 @@ UPDATE molecules SET amw=mol_amw(m);
 statement ok
 UPDATE molecules SET logp=mol_logp(m);
 
-query IIIII
-SELECT m, exactmw, tpsa, amw, logp FROM molecules;
+statement ok
+UPDATE molecules SET hbd=mol_hbd(m);
+
+statement ok
+UPDATE molecules SET hba=mol_hba(m);
+
+statement ok
+UPDATE molecules SET num_rotatable_bonds=mol_num_rotatable_bonds(m);
+
+query IIIIIIII
+SELECT m, exactmw, tpsa, amw, logp, hbd, hba, num_rotatable_bonds FROM molecules;
 ----
-c1ccccc1	78.04695	0.0	78.11399	1.6866
-CC	30.04695	0.0	30.07	1.0262
-CCO	46.041866	20.23	46.069	-0.0014000000000000123
-
-
+c1ccccc1	78.04695	0.0	78.11399	1.6866	0	0	0
+CC	30.04695	0.0	30.07	1.0262	0	0	0
+CCO	46.041866	20.23	46.069	-0.0014000000000000123	1	1	0
+CS(=O)(=O)Nc1ccncc1-c1ccccc1C(F)(F)F	316.04933325200005	59.06	316.30400000000003	3.1389000000000014	1	3	3
+COc1ccc(-c2cc(-c3ccc(S(C)(=O)=O)cc3C(F)(F)F)cnc2N)cn1	423.0864470320001	95.17	423.41600000000005	3.8237000000000023	1	6	4

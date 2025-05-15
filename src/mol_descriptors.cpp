@@ -89,6 +89,48 @@ void mol_tpsa(DataChunk &args, ExpressionState &state, Vector &result) {
       });
 }
 
+void mol_hbd(DataChunk &args, ExpressionState &state, Vector &result) {
+  D_ASSERT(args.data.size() == 1);
+  auto &binary_umbra_mol = args.data[0];
+  auto count = args.size();
+
+  UnaryExecutor::Execute<string_t, int32_t>(
+      binary_umbra_mol, result, count, [&](string_t b_umbra_mol) {
+        auto umbra_mol = umbra_mol_t(b_umbra_mol);
+        auto bmol = umbra_mol.GetBinaryMol();
+        auto mol = rdkit_binary_mol_to_mol(bmol);
+        return RDKit::Descriptors::calcNumHBD(*mol);
+      });
+}
+
+void mol_hba(DataChunk &args, ExpressionState &state, Vector &result) {
+  D_ASSERT(args.data.size() == 1);
+  auto &binary_umbra_mol = args.data[0];
+  auto count = args.size();
+
+  UnaryExecutor::Execute<string_t, int32_t>(
+      binary_umbra_mol, result, count, [&](string_t b_umbra_mol) {
+        auto umbra_mol = umbra_mol_t(b_umbra_mol);
+        auto bmol = umbra_mol.GetBinaryMol();
+        auto mol = rdkit_binary_mol_to_mol(bmol);
+        return RDKit::Descriptors::calcNumHBA(*mol);
+      });
+}
+
+void mol_num_rotatable_bonds(DataChunk &args, ExpressionState &state, Vector &result) {
+  D_ASSERT(args.data.size() == 1);
+  auto &binary_umbra_mol = args.data[0];
+  auto count = args.size();
+
+  UnaryExecutor::Execute<string_t, int32_t>(
+      binary_umbra_mol, result, count, [&](string_t b_umbra_mol) {
+        auto umbra_mol = umbra_mol_t(b_umbra_mol);
+        auto bmol = umbra_mol.GetBinaryMol();
+        auto mol = rdkit_binary_mol_to_mol(bmol);
+        return RDKit::Descriptors::calcNumRotatableBonds(*mol);
+      });
+}
+
 void RegisterDescriptorFunctions(DatabaseInstance &instance) {
   ScalarFunctionSet set_mol_amw("mol_amw");
   set_mol_amw.AddFunction(
@@ -114,5 +156,20 @@ void RegisterDescriptorFunctions(DatabaseInstance &instance) {
   set_mol_logp.AddFunction(
       ScalarFunction({duckdb_rdkit::Mol()}, LogicalType::FLOAT, mol_logp));
   ExtensionUtil::RegisterFunction(instance, set_mol_logp);
+
+  ScalarFunctionSet set_mol_hbd("mol_hbd");
+  set_mol_hbd.AddFunction(
+      ScalarFunction({duckdb_rdkit::Mol()}, LogicalType::INTEGER, mol_hbd));
+  ExtensionUtil::RegisterFunction(instance, set_mol_hbd);
+
+  ScalarFunctionSet set_mol_hba("mol_hba");
+  set_mol_hba.AddFunction(
+      ScalarFunction({duckdb_rdkit::Mol()}, LogicalType::INTEGER, mol_hba));
+  ExtensionUtil::RegisterFunction(instance, set_mol_hba);
+
+  ScalarFunctionSet set_mol_num_rotatable_bonds("mol_num_rotatable_bonds");
+  set_mol_num_rotatable_bonds.AddFunction(
+      ScalarFunction({duckdb_rdkit::Mol()}, LogicalType::INTEGER, mol_num_rotatable_bonds));
+  ExtensionUtil::RegisterFunction(instance, set_mol_num_rotatable_bonds);
 }
 } // namespace duckdb_rdkit

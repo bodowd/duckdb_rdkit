@@ -80,6 +80,9 @@ cheminformatics work with DuckDB.
 - `mol_exactmw(mol)`: returns the exact molecular weight
 - `mol_amw(mol)`: returns the approximate molecular weight
 - `mol_tpsa(mol)`: returns the topological polar surface area
+- `mol_hba(mol)`: returns the number of H-bonds acceptors
+- `mol_hbd(mol)`: returns the number of H-bonds donors
+- `mol_num_rotatable_bonds(mol)`: returns the number of rotatable bonds
 - `mol_qed(mol)`: returns the quantitative estimate of drug-likeness (QED) of the molecule
   - currently only implements the "mean weight" of the ADS parameters from the paper Quantifying the chemical beauty of drugs by Bickerton, et al.
 
