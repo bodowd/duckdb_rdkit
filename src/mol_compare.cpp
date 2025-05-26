@@ -11,6 +11,11 @@
 #include <GraphMol/MolPickler.h>
 #include <GraphMol/SmilesParse/SmilesWrite.h>
 #include <GraphMol/Substruct/SubstructMatch.h>
+#include <GraphMol/Fingerprints/MorganFingerprints.h>
+#include <DataStructs/ExplicitBitVect.h>
+#include <DataStructs/BitVect.h>
+#include <DataStructs/BitVects.h>
+
 #include <cstdio>
 #include <memory>
 
@@ -137,6 +142,47 @@ static void is_substruct(DataChunk &args, ExpressionState &state,
       });
 }
 
+double tanimoto_morgan(const std::string &m1_bmol, const std::string &m2_bmol, int radius = 2, int nb_bits = 2048) {
+    std::unique_ptr<RDKit::ROMol> m1(new RDKit::ROMol());
+    std::unique_ptr<RDKit::ROMol> m2(new RDKit::ROMol());
+    RDKit::MolPickler::molFromPickle(m1_bmol, *m1);
+    RDKit::MolPickler::molFromPickle(m2_bmol, *m2);
+
+    auto fp1 = RDKit::MorganFingerprints::getFingerprintAsBitVect(*m1, radius, nb_bits);
+    auto fp2 = RDKit::MorganFingerprints::getFingerprintAsBitVect(*m2, radius, nb_bits);
+
+    return TanimotoSimilarity(*fp1, *fp2);
+}
+
+static void tanimoto_similarity(DataChunk &args, ExpressionState &state, Vector &result) {
+    D_ASSERT(args.ColumnCount() == 2 || args.ColumnCount() == 4);
+
+    auto &left = args.data[0];
+    auto &right = args.data[1];
+
+    int radius = 2;
+    int nb_bits = 2048;
+
+    if (args.ColumnCount() == 4) {
+        auto &radius_vec = args.data[2];
+        if (!duckdb::FlatVector::IsNull(radius_vec, 0)) {
+            radius = duckdb::FlatVector::GetData<int32_t>(radius_vec)[0];
+        }
+        auto &nb_bits_vec = args.data[3];
+        if (!duckdb::FlatVector::IsNull(nb_bits_vec, 0)) {
+            nb_bits = duckdb::FlatVector::GetData<int32_t>(nb_bits_vec)[0];
+        }
+    }
+
+    BinaryExecutor::Execute<string_t, string_t, double>(
+        left, right, result, args.size(),
+        [&](string_t &left_umbra_blob, string_t &right_umbra_blob) {
+            auto left_mol = umbra_mol_t(left_umbra_blob);
+            auto right_mol = umbra_mol_t(right_umbra_blob);
+            return tanimoto_morgan(left_mol.GetBinaryMol(), right_mol.GetBinaryMol(), radius, nb_bits);
+        });
+}
+
 void RegisterCompareFunctions(DatabaseInstance &instance) {
   ScalarFunctionSet set("is_exact_match");
   // left type and right type
@@ -149,6 +195,15 @@ void RegisterCompareFunctions(DatabaseInstance &instance) {
       ScalarFunction({duckdb_rdkit::Mol(), duckdb_rdkit::Mol()},
                      LogicalType::BOOLEAN, is_substruct));
   ExtensionUtil::RegisterFunction(instance, set_is_substruct);
+
+  ScalarFunctionSet set_tanimoto("tanimoto_similarity");
+  set_tanimoto.AddFunction(ScalarFunction(
+      {duckdb_rdkit::Mol(), duckdb_rdkit::Mol()},
+      LogicalType::DOUBLE, tanimoto_similarity));
+  set_tanimoto.AddFunction(ScalarFunction(
+      {duckdb_rdkit::Mol(), duckdb_rdkit::Mol(), LogicalType::INTEGER, LogicalType::INTEGER},
+      LogicalType::DOUBLE, tanimoto_similarity));
+  ExtensionUtil::RegisterFunction(instance, set_tanimoto);
 }
 
 } // namespace duckdb_rdkit
