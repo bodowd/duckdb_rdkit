@@ -66,10 +66,12 @@ static void is_exact_match(DataChunk &args, ExpressionState &state,
         auto left = umbra_mol_t(left_umbra_blob);
         auto right = umbra_mol_t(right_umbra_blob);
 
-        // The first 32 bits are the count prefix
-        // The exact match only needs the count prefix
+        // The prefix of a umbra_mol contains a bit vector for substructure
+        // screens. We also use this to check exact match. If the molecules
+        // being compared do not have the same substructures marked by the
+        // dalke_fp, they cannot be an exact match
         if (memcmp(left.GetPrefix(), right.GetPrefix(),
-                   umbra_mol_t::COUNT_PREFIX_BYTES) != 0) {
+                   umbra_mol_t::PREFIX_BYTES) != 0) {
           return false;
         };
 
@@ -95,29 +97,35 @@ bool _is_substruct(umbra_mol_t target, umbra_mol_t query) {
   //
   // It is only possible to short-circuit in the false case, not in the
   // true case
+  auto q_prefix = query.GetPrefixAsInt();
+  auto t_prefix = target.GetPrefixAsInt();
 
-  auto query_dalke_fp = query.GetDalkeFPBitset();
-  auto target_dalke_fp = target.GetDalkeFPBitset();
+  // The 4 byte prefix in string_t is inlined. This is very fast to check.
+  // If we cannot conclude that the query is NOT a substructure of the target,
+  // we need the rest of the dalke fp. This requires chasing a pointer to the
+  // data of which the next 4 bytes of the dalke fp is at the front of.
+  if ((q_prefix & t_prefix) == q_prefix) {
+    auto q_dalke_fp = query.GetDalkeFP();
+    auto t_dalke_fp = target.GetDalkeFP();
+    if ((q_dalke_fp & t_dalke_fp) == q_dalke_fp) {
+      // query might be substructure of the target -- run a substructure match
+      // on the molecule objects
+      std::unique_ptr<RDKit::ROMol> left_mol(new RDKit::ROMol());
+      std::unique_ptr<RDKit::ROMol> right_mol(new RDKit::ROMol());
 
-  for (auto i = 0; i < query_dalke_fp.size(); i++) {
-    if (query_dalke_fp[i] && !target_dalke_fp[i]) {
-      return false;
+      RDKit::MolPickler::molFromPickle(target.GetBinaryMol(), *left_mol);
+      RDKit::MolPickler::molFromPickle(query.GetBinaryMol(), *right_mol);
+
+      // copied from chemicalite
+      RDKit::MatchVectType matchVect;
+      bool recursion_possible = true;
+      bool do_chiral_match =
+          false; /* FIXME: make configurable getDoChiralSSS(); */
+      return RDKit::SubstructMatch(*left_mol, *right_mol, matchVect,
+                                   recursion_possible, do_chiral_match);
     }
   }
-
-  // otherwise, run a substructure match on the molecule objects
-  std::unique_ptr<RDKit::ROMol> left_mol(new RDKit::ROMol());
-  std::unique_ptr<RDKit::ROMol> right_mol(new RDKit::ROMol());
-
-  RDKit::MolPickler::molFromPickle(target.GetBinaryMol(), *left_mol);
-  RDKit::MolPickler::molFromPickle(query.GetBinaryMol(), *right_mol);
-
-  // copied from chemicalite
-  RDKit::MatchVectType matchVect;
-  bool recursion_possible = true;
-  bool do_chiral_match = false; /* FIXME: make configurable getDoChiralSSS(); */
-  return RDKit::SubstructMatch(*left_mol, *right_mol, matchVect,
-                               recursion_possible, do_chiral_match);
+  return false;
 }
 
 static void is_substruct(DataChunk &args, ExpressionState &state,

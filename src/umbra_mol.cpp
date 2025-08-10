@@ -113,78 +113,7 @@ uint64_t make_dalke_fp(const RDKit::ROMol &mol) {
 // Umbra-style strings
 std::string get_umbra_mol_string(const RDKit::ROMol &mol) {
   auto binary_mol = rdkit_mol_to_binary_mol(mol);
-  size_t total_size = umbra_mol_t::PREFIX_BYTES + binary_mol.size();
-
-  // Add the prefix in front of the binary molecule object
-  //
-  // The prefix consists of two parts: some simple counts used for filtering
-  // records in exact match and a bit vector that marks the presence of
-  // certain substructures for filtering records in substructure match
-  // searches
-
-  // The counts prefix consists of
-  // number of atoms, 7 bits
-  // number of bonds, 6 bits
-  // number of rings, 3 bits
-  // amw, 11 bits
-  // In total that is 27 bits, which is placed into a uint32_t.
-  // There are 5 bits left over, but this makes alignment a little easier
-  // particularly when the dalke fingerprint vector is included
-  uint32_t num_atoms = mol.getNumAtoms();
-  uint32_t num_bonds = mol.getNumBonds();
-  uint32_t amw = RDKit::Descriptors::calcAMW(mol);
-  uint32_t num_rings = mol.getRingInfo()->numRings();
-
-  // initialize with zero otherwise prefix will have data from
-  // previous calls of this function
-  uint32_t prefix = 0;
-
-  // Cap the count if it is larger than the number of bits it supports.
-  // The number of bits to use was determined by an analysis of these properties
-  // of molecules in chembl.
-  // The number of bits for each count supports the 99th percentile of
-  // values in chembl.
-  if (num_atoms >= 127) {
-    num_atoms = 127;
-  }
-
-  if (num_bonds >= 63) {
-    num_bonds = 63;
-  }
-
-  if (num_rings >= 7) {
-    num_rings = 7;
-  }
-
-  if (amw >= 2047) {
-    amw = 2047;
-  }
-
-  // 0x7F is 127 is 0111 1111 which sets the first 7 bits of a number
-  // (num_atoms & 0x7F) creates a mask, keeping only the first 7 bits
-  // and higher order bits are zeroed out
-  // shift 25 bits to the left to pack up to 32 bit (will fill bits 25 to
-  // 32)
-  prefix |= (num_atoms & 0x7F) << 25;
-  // 0x3F is 63 is 0011 1111 to set the first 6 bits
-  // apply mask to keep only the first 6 bits
-  // shift 19 bits to the left
-  // because first 7 bits are now taken
-  // This value should take the next 6 bits.
-  // that means 13 bits will be occupied
-  // So then set the lowest bit of the num_bonds value to the 19th
-  // bit because
-  // 32 bits - 13 bits = 19 bits
-  prefix |= (num_bonds & 0x3F) << 19;
-  // 0x07 is 0111 is 7 which will set the lower 3 bits
-  // 32 bits - 7 bits for num_atoms - 6 bits for num_bonds - 3 bits for
-  // num_rings = 16 So this should be shifted so that the last bit of
-  // num_rings is at the 16th place
-  prefix |= (num_rings & 0x07) << 16;
-  // 0x7FF is 2047 is 0111_1110_1000	which will set the lowest 11
-  // bits 32 - 7 - 6 - 3 - 11 = 5 Shift to the left so that the last bit is
-  // at the 5th place
-  prefix |= (amw & 0x7FF) << 5;
+  size_t total_size = umbra_mol_t::DALKE_FP_PREFIX_BYTES + binary_mol.size();
 
   uint64_t dalke_fp = make_dalke_fp(mol);
 
@@ -192,8 +121,6 @@ std::string get_umbra_mol_string(const RDKit::ROMol &mol) {
   // little endian on my machine
   std::string buffer;
   buffer.reserve(total_size);
-  buffer.append(reinterpret_cast<const char *>(&prefix),
-                umbra_mol_t::COUNT_PREFIX_BYTES);
   buffer.append(reinterpret_cast<const char *>(&dalke_fp),
                 umbra_mol_t::DALKE_FP_PREFIX_BYTES);
   buffer.append(binary_mol);

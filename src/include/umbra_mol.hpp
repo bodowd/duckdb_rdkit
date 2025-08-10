@@ -28,18 +28,14 @@ struct umbra_mol_t {
 
   umbra_mol_t(string_t &buffer) : string_t_umbra_mol(buffer) {}
 
-  static constexpr idx_t COUNT_PREFIX_BYTES = 4 * sizeof(char);
-  static constexpr idx_t DALKE_FP_PREFIX_BYTES = 8 * sizeof(char);
-  // 27 bits for the counts -- closest uint is 32 bits
   // 55 bits for the dalke_fp -- closest uint is 64 bits
-  // using the uint32 and 64 makes concatenating stuff easier
-  // as well, maybe this could be optimized and not waste
-  // so much space
-  // so 4 bytes + 8 byes = 12 bytes for prefix length
-  static constexpr idx_t PREFIX_BYTES =
-      COUNT_PREFIX_BYTES + DALKE_FP_PREFIX_BYTES;
+  // This is the entire Dalke FP size
+  // 4 bytes are inlined by duckdb as the PREFIX in the underlying string_t
+  // class And the remaining 4 bytes are in the beginning of the "string"
+  // pointed to by the pointer in string_t
+  static constexpr idx_t DALKE_FP_PREFIX_BYTES = 8 * sizeof(char);
   static constexpr idx_t MAX_STRING_SIZE = NumericLimits<uint32_t>::Maximum();
-  static constexpr idx_t PREFIX_LENGTH = PREFIX_BYTES;
+  static constexpr idx_t PREFIX_BYTES = string_t::PREFIX_BYTES;
 
   // umbra_mol_t is a data type used for the duckdb_rdkit extension and it
   // is a string_t type under the hood.
@@ -76,28 +72,32 @@ struct umbra_mol_t {
   //   D_ASSERT(value.ptr == buffer.GetData());
   // }
 
-  std::bitset<64> GetDalkeFPBitset() {
+  uint64_t GetDalkeFP() {
     uint64_t int_fp = 0;
-    std::memcpy(&int_fp, string_t_umbra_mol.GetData() + COUNT_PREFIX_BYTES,
-                DALKE_FP_PREFIX_BYTES);
-    std::bitset<64> fp(int_fp);
+    std::memcpy(&int_fp, string_t_umbra_mol.GetData(), DALKE_FP_PREFIX_BYTES);
+    return int_fp;
+  }
 
-    return fp;
+  // Return the prefix as a 4 byte int
+  // Converts the underlying string_t prefix to 4 byte int to make it
+  // easy to do bitwise operation
+  uint32_t GetPrefixAsInt() {
+    return Load<uint32_t>(const_data_ptr_cast(string_t_umbra_mol.GetPrefix()));
   }
 
   const char *GetPrefix() { return string_t_umbra_mol.GetPrefix(); }
 
   uint32_t GetBinaryMolSize() {
-    return string_t_umbra_mol.GetSize() - PREFIX_LENGTH;
+    return string_t_umbra_mol.GetSize() - DALKE_FP_PREFIX_BYTES;
   }
 
   std::string GetBinaryMol() {
-    idx_t bmol_size = string_t_umbra_mol.GetSize() - PREFIX_LENGTH;
+    idx_t bmol_size = string_t_umbra_mol.GetSize() - DALKE_FP_PREFIX_BYTES;
     std::string buffer;
     buffer.resize(bmol_size);
     if (string_t_umbra_mol.GetData() &&
-        string_t_umbra_mol.GetSize() > PREFIX_LENGTH) {
-      memcpy(&buffer[0], &string_t_umbra_mol.GetData()[PREFIX_LENGTH],
+        string_t_umbra_mol.GetSize() > DALKE_FP_PREFIX_BYTES) {
+      memcpy(&buffer[0], &string_t_umbra_mol.GetData()[DALKE_FP_PREFIX_BYTES],
              bmol_size);
     }
     return buffer;
