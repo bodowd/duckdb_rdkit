@@ -81,7 +81,8 @@ uint64_t make_dalke_fp(const RDKit::ROMol &mol) {
   // in the target molecule (the one that an UmbraMol will be constructed for)
   // the dalke fragment is the "query" molecule in the SubstructMatch
   // function
-  for (const auto &fp : dalke_counts) {
+  for (auto it = dalke_counts.rbegin(); it != dalke_counts.rend(); ++it) {
+    const auto &fp = *it;
     std::unique_ptr<RDKit::ROMol> dalke_fp_mol;
 
     try {
