@@ -35,7 +35,9 @@ set(DUCKDB_RDKIT_LIBRARIES
    RDKit::SmilesParse  
    RDKit::GraphMol 
    RDKit::Descriptors
-    )
+   RDKit::Fingerprints
+   RDKit::DataStructs
+   )
 # Link OpenSSL in both the static library as the loadable extension
 target_link_libraries(${EXTENSION_NAME} ${DUCKDB_RDKIT_LIBRARIES})
 target_link_libraries(${LOADABLE_EXTENSION_NAME} ${DUCKDB_RDKIT_LIBRARIES})

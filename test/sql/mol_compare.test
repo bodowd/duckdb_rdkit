@@ -32,3 +32,36 @@ SELECT m FROM molecules WHERE is_exact_match(m,'CCO');
 CCO
 CCO
 
+# test substruct search when some matches
+query I
+SELECT m FROM molecules WHERE is_substruct(m,'c1ccncc1');
+----
+c1ccncc1
+c1ccc(-c2ccccn2)nc1
+
+# test substruct search when no match
+query I
+SELECT m FROM molecules WHERE is_substruct(m,'c1cCcncc1');
+----
+
+# test similarity computation with default parameters
+query II
+SELECT m, tanimoto_similarity(m,mol_from_smiles('c1ccncc1')) FROM molecules;
+----
+c1ccccc1	0.3333333333333333
+CCO	0.0
+c1ccncc1	1.0
+c1ccc(-c2ccccn2)nc1	0.2777777777777778
+CCO	0.0
+Cc1ccccc1	0.17647058823529413
+
+# test similarity computation with custom parameters
+query II
+SELECT m, tanimoto_similarity(m,mol_from_smiles('c1ccncc1'), 4, 4096) FROM molecules;
+----
+c1ccccc1	0.2727272727272727
+CCO	0.0
+c1ccncc1	1.0
+c1ccc(-c2ccccn2)nc1	0.20833333333333334
+CCO	0.0
+Cc1ccccc1	0.15
