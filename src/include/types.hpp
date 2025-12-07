@@ -8,5 +8,5 @@
 namespace duckdb_rdkit {
 
 LogicalType Mol();
-void RegisterTypes(DatabaseInstance &instance);
+void RegisterTypes(ExtensionLoader &loader);
 } // namespace duckdb_rdkit

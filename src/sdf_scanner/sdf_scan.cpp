@@ -1,7 +1,7 @@
 #include "sdf_scanner/sdf_scan.hpp"
 #include "duckdb/common/allocator.hpp"
 #include "duckdb/common/helper.hpp"
-#include "duckdb/common/multi_file_reader.hpp"
+#include "duckdb/common/multi_file/multi_file_reader.hpp"
 #include "duckdb/common/types.hpp"
 #include "duckdb/common/unique_ptr.hpp"
 #include "duckdb/common/vector_size.hpp"
@@ -19,7 +19,11 @@ void SDFScanData::Bind(ClientContext &context, TableFunctionBindInput &input) {
   auto multi_file_reader = MultiFileReader::Create(input.table_function);
   auto file_list = multi_file_reader->CreateFileList(context, input.inputs[0]);
 
-  files = file_list->GetAllFiles();
+  auto all_files = file_list->GetAllFiles();
+  files.clear();
+  for (auto &file_info : all_files) {
+    files.push_back(file_info.path);
+  }
 }
 
 unique_ptr<LocalTableFunctionState>

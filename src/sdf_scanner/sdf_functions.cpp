@@ -1,7 +1,8 @@
 #include "sdf_scanner/sdf_functions.hpp"
 #include "duckdb/common/assert.hpp"
-#include "duckdb/common/multi_file_list.hpp"
-#include "duckdb/common/multi_file_reader.hpp"
+#include "duckdb/common/multi_file/multi_file_list.hpp"
+#include "duckdb/common/multi_file/multi_file_reader.hpp"
+#include "duckdb/common/open_file_info.hpp"
 #include "duckdb/common/types.hpp"
 #include "duckdb/common/types/vector.hpp"
 #include "duckdb/function/function.hpp"
@@ -135,9 +136,17 @@ unique_ptr<FunctionData> ReadSDFBind(ClientContext &context,
       // }
     }
   }
-  //! get the files
-  SimpleMultiFileList file_list(std::move(bind_data->files));
-  bind_data->files = file_list.GetAllFiles();
+  //! get the files - convert string paths to OpenFileInfo
+  vector<OpenFileInfo> file_infos;
+  for (auto &file : bind_data->files) {
+    file_infos.emplace_back(file);
+  }
+  SimpleMultiFileList file_list(std::move(file_infos));
+  auto all_files = file_list.GetAllFiles();
+  bind_data->files.clear();
+  for (auto &file_info : all_files) {
+    bind_data->files.push_back(file_info.path);
+  }
   if (bind_data->files.size() > 1) {
     throw NotImplementedException(
         "Reading more than one sdf file is currently not supported.");

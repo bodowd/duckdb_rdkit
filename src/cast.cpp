@@ -4,7 +4,6 @@
 #include "duckdb/common/types/string_type.hpp"
 #include "duckdb/common/types/vector.hpp"
 #include "duckdb/function/cast/default_casts.hpp"
-#include "duckdb/main/extension_util.hpp"
 #include "mol_formats.hpp"
 #include "types.hpp"
 #include "umbra_mol.hpp"
@@ -74,14 +73,12 @@ bool MolToVarcharCast(Vector &source, Vector &result, idx_t count,
   return true;
 }
 
-void RegisterCasts(DatabaseInstance &instance) {
-  ExtensionUtil::RegisterCastFunction(instance, LogicalType::VARCHAR,
-                                      ::duckdb_rdkit::Mol(),
-                                      BoundCastInfo(VarcharToMolCast), 1);
+void RegisterCasts(ExtensionLoader &loader) {
+  loader.RegisterCastFunction(LogicalType::VARCHAR, ::duckdb_rdkit::Mol(),
+                              BoundCastInfo(VarcharToMolCast), 1);
 
-  ExtensionUtil::RegisterCastFunction(instance, duckdb_rdkit::Mol(),
-                                      LogicalType::VARCHAR,
-                                      BoundCastInfo(MolToVarcharCast), 1);
+  loader.RegisterCastFunction(duckdb_rdkit::Mol(), LogicalType::VARCHAR,
+                              BoundCastInfo(MolToVarcharCast), 1);
 }
 
 } // namespace duckdb_rdkit

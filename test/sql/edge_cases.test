@@ -1,0 +1,258 @@
+# name: test/sql/edge_cases.test
+# description: Edge case tests for duckdb_rdkit extension
+# group: [duckdb_rdkit]
+
+require duckdb_rdkit
+
+# ============================================================================
+# NULL handling tests
+# ============================================================================
+
+# mol_from_smiles with NULL input
+query I
+SELECT mol_from_smiles(NULL);
+----
+NULL
+
+# mol_to_smiles with NULL input
+query I
+SELECT mol_to_smiles(NULL::mol);
+----
+NULL
+
+# descriptors with NULL mol
+query I
+SELECT mol_amw(NULL::mol);
+----
+NULL
+
+query I
+SELECT mol_exactmw(NULL::mol);
+----
+NULL
+
+query I
+SELECT mol_logp(NULL::mol);
+----
+NULL
+
+query I
+SELECT mol_tpsa(NULL::mol);
+----
+NULL
+
+query I
+SELECT mol_hbd(NULL::mol);
+----
+NULL
+
+query I
+SELECT mol_hba(NULL::mol);
+----
+NULL
+
+query I
+SELECT mol_qed(NULL::mol);
+----
+NULL
+
+query I
+SELECT mol_num_rotatable_bonds(NULL::mol);
+----
+NULL
+
+# is_exact_match with NULL
+query I
+SELECT is_exact_match(NULL::mol, 'CCO'::mol);
+----
+NULL
+
+query I
+SELECT is_exact_match('CCO'::mol, NULL::mol);
+----
+NULL
+
+query I
+SELECT is_exact_match(NULL::mol, NULL::mol);
+----
+NULL
+
+# is_substruct with NULL
+query I
+SELECT is_substruct(NULL::mol, 'CCO'::mol);
+----
+NULL
+
+query I
+SELECT is_substruct('CCO'::mol, NULL::mol);
+----
+NULL
+
+# ============================================================================
+# Invalid SMILES handling
+# ============================================================================
+
+# Invalid SMILES returns NULL (not error)
+query I
+SELECT mol_from_smiles('not_a_smiles');
+----
+NULL
+
+query I
+SELECT mol_from_smiles('C(C)(C)(C)(C)C');
+----
+NULL
+
+# Empty SMILES returns empty (not NULL) - this is consistent with RDKit behavior
+query I
+SELECT mol_from_smiles('') IS NOT NULL;
+----
+true
+
+# ============================================================================
+# Stereochemistry tests
+# ============================================================================
+
+# E/Z isomers - note: is_exact_match currently treats E/Z isomers as equivalent
+# This tests current behavior; stereochemistry comparison may be enhanced in future
+query I
+SELECT is_exact_match('C/C=C/C'::mol, 'C/C=C\C'::mol);
+----
+true
+
+# Same E isomer with different notation
+query I
+SELECT is_exact_match('C/C=C/C'::mol, mol_from_smiles('C/C=C/C'));
+----
+true
+
+# R/S chirality - note: is_exact_match treats enantiomers as equivalent
+# This tests current behavior; stereochemistry comparison may be enhanced in future
+query I
+SELECT is_exact_match('[C@H](O)(F)Cl'::mol, '[C@@H](O)(F)Cl'::mol);
+----
+true
+
+# Same chiral molecule
+query I
+SELECT is_exact_match('[C@H](O)(F)Cl'::mol, '[C@H](O)(F)Cl'::mol);
+----
+true
+
+# Chiral center preserved through round-trip
+query I
+SELECT mol_to_smiles('[C@H](Cl)(F)O'::mol) LIKE '%@%';
+----
+true
+
+# ============================================================================
+# Large/Complex molecule tests
+# ============================================================================
+
+# Taxol (paclitaxel) - a complex natural product
+statement ok
+CREATE TABLE complex_mols (name VARCHAR, m Mol);
+
+statement ok
+INSERT INTO complex_mols VALUES
+    ('taxol', 'CC1=C2[C@@]([C@]([C@H]([C@@H]3[C@]4([C@H](OC4)C[C@@H]([C@]3(C(=O)[C@@H]2OC(=O)C)C)O)OC(=O)C)OC(=O)c5ccccc5)(C[C@@H]1OC(=O)[C@H](O)[C@@H](NC(=O)c6ccccc6)c7ccccc7)O)(C)C'),
+    ('aspirin', 'CC(=O)Oc1ccccc1C(=O)O'),
+    ('caffeine', 'Cn1cnc2c1c(=O)n(c(=O)n2C)C');
+
+# Complex molecule can be stored and retrieved
+query I
+SELECT COUNT(*) FROM complex_mols WHERE m IS NOT NULL;
+----
+3
+
+# Descriptors work on complex molecules
+query I
+SELECT name FROM complex_mols WHERE mol_amw(m) > 500 ORDER BY name;
+----
+taxol
+
+# Substructure search on complex molecule - find molecules with benzene
+query I
+SELECT name FROM complex_mols WHERE is_substruct(m, 'c1ccccc1'::mol) ORDER BY name;
+----
+aspirin
+taxol
+
+# ============================================================================
+# Molecule with charged atoms
+# ============================================================================
+
+query I
+SELECT mol_to_smiles('[NH4+]'::mol);
+----
+[NH4+]
+
+query I
+SELECT mol_to_smiles('[O-]C(=O)C'::mol);
+----
+CC(=O)[O-]
+
+# Zwitterion
+query I
+SELECT mol_to_smiles('[NH3+]CCC([O-])=O'::mol) IS NOT NULL;
+----
+true
+
+# ============================================================================
+# Molecules with isotopes
+# ============================================================================
+
+query I
+SELECT mol_to_smiles('[13CH4]'::mol);
+----
+[13CH4]
+
+query I
+SELECT mol_to_smiles('[2H]C([2H])([2H])[2H]'::mol) IS NOT NULL;
+----
+true
+
+# ============================================================================
+# Ring systems
+# ============================================================================
+
+# Fused rings - naphthalene
+query I
+SELECT is_substruct('c1ccc2ccccc2c1'::mol, 'c1ccccc1'::mol);
+----
+true
+
+# Spiro compound
+query I
+SELECT mol_to_smiles('C1CCC2(CC1)CCCCC2'::mol) IS NOT NULL;
+----
+true
+
+# Bridged bicyclic - norbornane
+query I
+SELECT mol_to_smiles('C1CC2CCC1C2'::mol) IS NOT NULL;
+----
+true
+
+# ============================================================================
+# Edge case SMILES
+# ============================================================================
+
+# Single atom
+query I
+SELECT mol_to_smiles('C'::mol);
+----
+C
+
+# Disconnected fragments (salts)
+query I
+SELECT mol_to_smiles('[Na+].[Cl-]'::mol) IS NOT NULL;
+----
+true
+
+# Very long chain
+query I
+SELECT mol_amw('CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC'::mol) > 400;
+----
+true
+

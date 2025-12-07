@@ -32,3 +32,65 @@ SELECT m FROM molecules WHERE is_exact_match(m,'CCO');
 CCO
 CCO
 
+# ============================================================================
+# is_substruct tests - substructure searching
+# ============================================================================
+
+# benzene is a substructure of toluene
+query I
+SELECT is_substruct('Cc1ccccc1'::mol, 'c1ccccc1'::mol);
+----
+true
+
+# toluene is NOT a substructure of benzene (has extra methyl)
+query I
+SELECT is_substruct('c1ccccc1'::mol, 'Cc1ccccc1'::mol);
+----
+false
+
+# ethanol contains C-O substructure
+query I
+SELECT is_substruct('CCO'::mol, 'CO'::mol);
+----
+true
+
+# find all molecules containing benzene ring
+query I rowsort
+SELECT m FROM molecules WHERE is_substruct(m, 'c1ccccc1'::mol);
+----
+Cc1ccccc1
+c1ccccc1
+
+# find all molecules containing pyridine ring
+query I rowsort
+SELECT m FROM molecules WHERE is_substruct(m, 'c1ccncc1'::mol);
+----
+c1ccc(-c2ccccn2)nc1
+c1ccncc1
+
+# bipyridine contains pyridine as substructure
+query I
+SELECT is_substruct('c1ccc(-c2ccccn2)nc1'::mol, 'c1ccncc1'::mol);
+----
+true
+
+# same molecule is substructure of itself
+query I
+SELECT is_substruct('CCO'::mol, 'CCO'::mol);
+----
+true
+
+# SMARTS-like pattern: any aromatic ring (using benzene as proxy)
+query I
+SELECT COUNT(*) FROM molecules WHERE is_substruct(m, 'c1ccccc1'::mol);
+----
+2
+
+# hydroxyl group substructure search
+query I rowsort
+SELECT m FROM molecules WHERE is_substruct(m, 'O'::mol);
+----
+CCO
+CCO
+
+

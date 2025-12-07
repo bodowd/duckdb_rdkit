@@ -4,7 +4,7 @@
 
 #define DUCKDB_EXTENSION_MAIN
 #include "cast.hpp"
-#include "duckdb/main/extension_util.hpp"
+#include "duckdb/main/extension/extension_loader.hpp"
 #include "duckdb_rdkit_extension.hpp"
 #include "mol_compare.hpp"
 #include "mol_formats.hpp"
@@ -20,39 +20,43 @@
 
 namespace duckdb {
 
-static void LoadInternal(DatabaseInstance &instance) {
-  duckdb_rdkit::RegisterTypes(instance);
-  duckdb_rdkit::RegisterCasts(instance);
-  duckdb_rdkit::RegisterFormatFunctions(instance);
-  duckdb_rdkit::RegisterCompareFunctions(instance);
-  duckdb_rdkit::RegisterDescriptorFunctions(instance);
+static void LoadInternal(ExtensionLoader &loader) {
+  duckdb_rdkit::RegisterTypes(loader);
+  duckdb_rdkit::RegisterCasts(loader);
+  duckdb_rdkit::RegisterFormatFunctions(loader);
+  duckdb_rdkit::RegisterCompareFunctions(loader);
+  duckdb_rdkit::RegisterDescriptorFunctions(loader);
 
   for (auto &fun : SDFFunctions::GetTableFunctions()) {
-    ExtensionUtil::RegisterFunction(instance, fun);
+    loader.RegisterFunction(fun);
   }
 
   // SDF replacement scan
+  auto &instance = loader.GetDatabaseInstance();
   auto &config = DBConfig::GetConfig(instance);
   config.replacement_scans.emplace_back(SDFFunctions::ReadSDFReplacement);
 }
 
-void DuckdbRdkitExtension::Load(DuckDB &db) { LoadInternal(*db.instance); }
+void DuckdbRdkitExtension::Load(ExtensionLoader &loader) {
+  LoadInternal(loader);
+}
 
 std::string DuckdbRdkitExtension::Name() { return "duckdb_rdkit"; }
 
 } // namespace duckdb
 
+#ifdef DUCKDB_BUILD_LOADABLE_EXTENSION
 extern "C" {
 
-DUCKDB_EXTENSION_API void duckdb_rdkit_init(duckdb::DatabaseInstance &db) {
-  duckdb::DuckDB db_wrapper(db);
-  db_wrapper.LoadExtension<duckdb::DuckdbRdkitExtension>();
+DUCKDB_CPP_EXTENSION_ENTRY(duckdb_rdkit, loader) {
+  duckdb::LoadInternal(loader);
 }
 
 DUCKDB_EXTENSION_API const char *duckdb_rdkit_version() {
   return duckdb::DuckDB::LibraryVersion();
 }
 }
+#endif
 
 #ifndef DUCKDB_EXTENSION_MAIN
 #error DUCKDB_EXTENSION_MAIN not defined

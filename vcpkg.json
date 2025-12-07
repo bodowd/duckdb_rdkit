@@ -1,3 +1,7 @@
 {
-  "dependencies": ["openssl"]
+  "dependencies": [
+    "boost-system",
+    "boost-serialization",
+    "boost-iostreams"
+  ]
 }

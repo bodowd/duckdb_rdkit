@@ -1,6 +1,6 @@
 #pragma once
 #include "GraphMol/FileParsers/MolSupplier.h"
-#include "duckdb/common/multi_file_reader.hpp"
+#include "duckdb/common/multi_file/multi_file_reader.hpp"
 #include "duckdb/common/unique_ptr.hpp"
 #include "duckdb/execution/execution_context.hpp"
 #include "duckdb/function/function.hpp"

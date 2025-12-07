@@ -5,7 +5,6 @@
 #include "duckdb/common/constants.hpp"
 #include "duckdb/common/types.hpp"
 #include "duckdb/main/database.hpp"
-#include "duckdb/main/extension_util.hpp"
 
 namespace duckdb_rdkit {
 
@@ -15,9 +14,9 @@ LogicalType Mol() {
   return blob_type;
 }
 
-void RegisterTypes(DatabaseInstance &instance) {
+void RegisterTypes(ExtensionLoader &loader) {
   // Register Mol type
-  ExtensionUtil::RegisterType(instance, "Mol", Mol());
+  loader.RegisterType("Mol", Mol());
 }
 
 } // namespace duckdb_rdkit

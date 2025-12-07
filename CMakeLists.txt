@@ -7,6 +7,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # Set extension name here
 set(TARGET_NAME duckdb_rdkit)
 
+# Find Boost with components before RDKit, so that Boost::system etc. targets
+# are created (vcpkg's BoostConfig only creates targets for requested components)
+find_package(Boost REQUIRED COMPONENTS system serialization iostreams)
 find_package(RDKit REQUIRED)
 
 set(EXTENSION_NAME ${TARGET_NAME}_extension)

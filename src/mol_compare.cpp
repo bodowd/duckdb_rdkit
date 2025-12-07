@@ -2,7 +2,6 @@
 #include "duckdb/common/types/vector.hpp"
 #include "duckdb/execution/expression_executor_state.hpp"
 #include "duckdb/function/scalar_function.hpp"
-#include "duckdb/main/extension_util.hpp"
 #include "mol_formats.hpp"
 #include "types.hpp"
 #include "umbra_mol.hpp"
@@ -145,18 +144,18 @@ static void is_substruct(DataChunk &args, ExpressionState &state,
       });
 }
 
-void RegisterCompareFunctions(DatabaseInstance &instance) {
+void RegisterCompareFunctions(ExtensionLoader &loader) {
   ScalarFunctionSet set("is_exact_match");
   // left type and right type
   set.AddFunction(ScalarFunction({duckdb_rdkit::Mol(), duckdb_rdkit::Mol()},
                                  LogicalType::BOOLEAN, is_exact_match));
-  ExtensionUtil::RegisterFunction(instance, set);
+  loader.RegisterFunction(set);
 
   ScalarFunctionSet set_is_substruct("is_substruct");
   set_is_substruct.AddFunction(
       ScalarFunction({duckdb_rdkit::Mol(), duckdb_rdkit::Mol()},
                      LogicalType::BOOLEAN, is_substruct));
-  ExtensionUtil::RegisterFunction(instance, set_is_substruct);
+  loader.RegisterFunction(set_is_substruct);
 }
 
 } // namespace duckdb_rdkit

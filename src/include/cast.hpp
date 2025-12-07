@@ -9,6 +9,6 @@ bool VarcharToMolCast(Vector &source, Vector &result, idx_t count,
 void MolToVarchar(Vector &source, Vector &result, idx_t count);
 bool MolToVarcharCast(Vector &source, Vector &result, idx_t count,
                       CastParameters &parameters);
-void RegisterCasts(DatabaseInstance &instance);
+void RegisterCasts(ExtensionLoader &loader);
 
 } // namespace duckdb_rdkit
