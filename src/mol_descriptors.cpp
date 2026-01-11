@@ -13,6 +13,7 @@
 #include "qed.hpp"
 #include "types.hpp"
 #include "umbra_mol.hpp"
+#include <GraphMol/MolHash/MolHash.h>
 
 namespace duckdb_rdkit {
 
@@ -128,6 +129,21 @@ void mol_num_rotatable_bonds(DataChunk &args, ExpressionState &state, Vector &re
         auto bmol = umbra_mol.GetBinaryMol();
         auto mol = rdkit_binary_mol_to_mol(bmol);
         return RDKit::Descriptors::calcNumRotatableBonds(*mol);
+      });
+}
+
+void mol_registration_hash(DataChunk &args, ExpressionState &state, Vector &result) {
+  D_ASSERT(args.data.size() == 1);
+  auto &binary_umbra_mol = args.data[0];
+  auto count = args.size();
+
+  UnaryExecutor::Execute<string_t, string_t>(
+      binary_umbra_mol, result, count, [&](string_t b_umbra_mol) {
+        auto umbra_mol = umbra_mol_t(b_umbra_mol);
+        auto bmol = umbra_mol.GetBinaryMol();
+        auto mol = rdkit_binary_mol_to_mol(bmol);
+        auto hash = RDKit::MolHash::generateMoleculeHash(*mol, RDKit::MolHash::HashScheme::ALL_LAYERS);
+        return StringVector::AddString(result, hash);
       });
 }
 
