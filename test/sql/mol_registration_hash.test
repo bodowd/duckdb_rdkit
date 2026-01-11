@@ -1,0 +1,27 @@
+# Require statement will ensure this test is run with this extension loaded
+require duckdb_rdkit
+
+statement ok
+CREATE TABLE molecules (m Mol, registration_hash VARCHAR);
+
+statement ok
+INSERT INTO molecules VALUES
+    (mol_from_smiles('CCO'), null),
+    (mol_from_smiles('C1=CC=CC=C1'), null);
+
+statement ok
+UPDATE molecules SET registration_hash=mol_registration_hash(m);
+
+query I
+SELECT registration_hash FROM molecules WHERE m = mol_from_smiles('CCO');
+----
+tautomer_smiles:CCO
+canonical_smiles:CCO
+mol_formula:C2H6O
+
+query I
+SELECT registration_hash FROM molecules WHERE m = mol_from_smiles('C1=CC=CC=C1');
+----
+tautomer_smiles:c1ccccc1
+canonical_smiles:c1ccccc1
+mol_formula:C6H6

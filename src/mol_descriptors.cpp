@@ -13,7 +13,8 @@
 #include "qed.hpp"
 #include "types.hpp"
 #include "umbra_mol.hpp"
-#include <GraphMol/MolHash/MolHash.h>
+#include <GraphMol/MolHash/nmmolhash.h>
+#include <sstream>
 
 namespace duckdb_rdkit {
 
@@ -142,8 +143,13 @@ void mol_registration_hash(DataChunk &args, ExpressionState &state, Vector &resu
         auto umbra_mol = umbra_mol_t(b_umbra_mol);
         auto bmol = umbra_mol.GetBinaryMol();
         auto mol = rdkit_binary_mol_to_mol(bmol);
-        auto hash = RDKit::MolHash::generateMoleculeHash(*mol, RDKit::MolHash::HashScheme::ALL_LAYERS);
-        return StringVector::AddString(result, hash);
+
+        std::stringstream hash_stream;
+        hash_stream << "tautomer_smiles:" << RDKit::MolHash::MolHash(mol, RDKit::MolHash::HashFunction::HetAtomTautomer) << "\n";
+        hash_stream << "canonical_smiles:" << RDKit::MolHash::MolHash(mol, RDKit::MolHash::HashFunction::CanonicalSmiles) << "\n";
+        hash_stream << "mol_formula:" << RDKit::MolHash::MolHash(mol, RDKit::MolHash::HashFunction::MolFormula);
+
+        return StringVector::AddString(result, hash_stream.str());
       });
 }
 
@@ -187,5 +193,10 @@ void RegisterDescriptorFunctions(DatabaseInstance &instance) {
   set_mol_num_rotatable_bonds.AddFunction(
       ScalarFunction({duckdb_rdkit::Mol()}, LogicalType::INTEGER, mol_num_rotatable_bonds));
   ExtensionUtil::RegisterFunction(instance, set_mol_num_rotatable_bonds);
+
+  ScalarFunctionSet set_mol_registration_hash("mol_registration_hash");
+  set_mol_registration_hash.AddFunction(
+      ScalarFunction({duckdb_rdkit::Mol()}, LogicalType::VARCHAR, mol_registration_hash));
+  ExtensionUtil::RegisterFunction(instance, set_mol_registration_hash);
 }
 } // namespace duckdb_rdkit
