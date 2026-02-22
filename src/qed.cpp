@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-namespace duckdb_rdkit {
+namespace duckdb {
 
 std::vector<RDKit::RWMol> QED::smarts2mols(std::vector<std::string> smarts) {
   std::vector<RDKit::RWMol> mols;
@@ -82,4 +82,4 @@ float QED::CalcQED(const RDKit::ROMol &mol) {
   return std::exp(sumOfWeightedADSValues / sumOfWeights);
 }
 
-} // namespace duckdb_rdkit
+} // namespace duckdb

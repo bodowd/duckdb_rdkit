@@ -109,9 +109,9 @@ unique_ptr<FunctionData> ReadSDFBind(ClientContext &context,
                                   "specification must be VARCHAR.");
           }
 
-          if (type.ToString() == duckdb_rdkit::Mol().ToString()) {
+          if (type.ToString() == Mol().ToString()) {
             bind_data->mol_col_idx = i;
-            return_types.emplace_back(duckdb_rdkit::Mol());
+            return_types.emplace_back(Mol());
           } else {
             //! All columns that are not Mol type should be converted to a
             //! normal duckdb LogicalType

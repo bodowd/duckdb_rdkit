@@ -1,12 +1,8 @@
 #pragma once
-#include "common.hpp"
-#include "duckdb/common/exception.hpp"
-#include <cstddef>
-#include <cstdint>
-#include <sys/types.h>
+#include "duckdb/main/extension/extension_loader.hpp"
 
-namespace duckdb_rdkit {
+namespace duckdb {
 
 LogicalType Mol();
-void RegisterTypes(DatabaseInstance &instance);
-} // namespace duckdb_rdkit
+void RegisterTypes(ExtensionLoader &loader);
+} // namespace duckdb

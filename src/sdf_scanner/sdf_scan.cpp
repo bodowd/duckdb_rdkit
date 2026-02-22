@@ -98,8 +98,8 @@ void SDFScanLocalState::ExtractNextChunk(SDFScanGlobalState &gstate,
         //! The column at the current iteration of i is the Mol type
         //! In this case, we should convert the molecule object
         //! to the "umbra" mol in duckdb_rdkit
-        if (bind_data.types[i] == duckdb_rdkit::Mol().ToString()) {
-          auto res = duckdb_rdkit::get_umbra_mol_string(*cur_mol);
+        if (bind_data.types[i] == Mol().ToString()) {
+          auto res = get_umbra_mol_string(*cur_mol);
           cur_row.emplace_back(res);
         } else {
           //! Otherwise, it is a normal property column
@@ -157,7 +157,7 @@ void SDFScan::AutoDetect(ClientContext &context, SDFScanData &bind_data,
   names.push_back("mol");
   bind_data.types.push_back("Mol");
   bind_data.mol_col_idx = names.size() - 1;
-  return_types.emplace_back(duckdb_rdkit::Mol());
+  return_types.emplace_back(Mol());
   bind_data.names = names;
 }
 

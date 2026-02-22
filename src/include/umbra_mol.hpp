@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <cstring>
 
-namespace duckdb_rdkit {
+namespace duckdb {
 
 // This is to generate the prefix and concatenate it with the binary RDKit
 // molecule so that it can then be sent to a string_t. Return the std::string
@@ -110,4 +110,4 @@ struct umbra_mol_t {
   std::string GetString() const { return std::string(GetData(), GetSize()); }
 };
 
-} // namespace duckdb_rdkit
+} // namespace duckdb
