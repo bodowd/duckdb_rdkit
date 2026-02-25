@@ -1,6 +1,6 @@
 #pragma once
 #include "GraphMol/FileParsers/MolSupplier.h"
-#include "duckdb/common/multi_file_reader.hpp"
+#include "duckdb/common/multi_file/multi_file_reader.hpp"
 #include "duckdb/common/unique_ptr.hpp"
 #include "duckdb/execution/execution_context.hpp"
 #include "duckdb/function/function.hpp"
@@ -18,7 +18,7 @@ public:
   void Bind(ClientContext &context, TableFunctionBindInput &input);
 
   //! The files we're reading
-  vector<string> files;
+  vector<OpenFileInfo> files;
   //! All column names (in order) specified by the query for projection
   vector<string> names;
   //! All column types (in order) specified by the query for projection
