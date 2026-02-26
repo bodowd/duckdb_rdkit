@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <string>
 
-namespace duckdb_rdkit {
+namespace duckdb {
 
 // These are fragments and the number of times they appear in a molecule.
 // Use a vector to keep the order. The order of the vector will inform the
@@ -127,4 +127,4 @@ std::string get_umbra_mol_string(const RDKit::ROMol &mol) {
 
   return buffer;
 }
-} // namespace duckdb_rdkit
+} // namespace duckdb

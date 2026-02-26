@@ -1,10 +1,7 @@
-#include "mol_formats.hpp"
-#include "common.hpp"
 #include "duckdb/common/string_util.hpp"
 #include "duckdb/common/types.hpp"
 #include "duckdb/execution/expression_executor_state.hpp"
 #include "duckdb/function/function_set.hpp"
-#include "duckdb/main/extension_util.hpp"
 #include "types.hpp"
 #include "umbra_mol.hpp"
 #include <GraphMol/Descriptors/MolDescriptors.h>
@@ -15,7 +12,7 @@
 #include <GraphMol/SmilesParse/SmilesParse.h>
 #include <GraphMol/SmilesParse/SmilesWrite.h>
 
-namespace duckdb_rdkit {
+namespace duckdb {
 // Expects a SMILES string and returns a RDKit pickled molecule
 std::unique_ptr<RDKit::ROMol> rdkit_mol_from_smiles(std::string s) {
   std::string smiles = s;
@@ -94,8 +91,6 @@ void mol_from_smiles(DataChunk &args, ExpressionState &state, Vector &result) {
         } catch (...) {
           std::cout << "WARNING: could not create molecule from SMILES\n"
                     << smiles.GetData() << std::endl;
-          // printf("WARNING: could not create molecule from SMILES %s\n",
-          //        smiles.GetData());
           mask.SetInvalid(idx);
           return string_t();
         }
@@ -114,22 +109,22 @@ void mol_to_rdkit_mol(DataChunk &args, ExpressionState &state, Vector &result) {
       });
 }
 
-void RegisterFormatFunctions(DatabaseInstance &instance) {
+void RegisterFormatFunctions(ExtensionLoader &loader) {
   // Register scalar functions
   ScalarFunctionSet mol_from_smiles_set("mol_from_smiles");
   mol_from_smiles_set.AddFunction(
       ScalarFunction({LogicalType::VARCHAR}, Mol(), mol_from_smiles));
-  ExtensionUtil::RegisterFunction(instance, mol_from_smiles_set);
+  loader.RegisterFunction(mol_from_smiles_set);
 
   ScalarFunctionSet mol_to_smiles_set("mol_to_smiles");
   mol_to_smiles_set.AddFunction(
       ScalarFunction({Mol()}, LogicalType::VARCHAR, mol_to_smiles));
-  ExtensionUtil::RegisterFunction(instance, mol_to_smiles_set);
+  loader.RegisterFunction(mol_to_smiles_set);
 
   ScalarFunctionSet mol_to_rdkit_mol_set("mol_to_rdkit_mol");
   mol_to_rdkit_mol_set.AddFunction(
       ScalarFunction({Mol()}, LogicalType::BLOB, mol_to_rdkit_mol));
-  ExtensionUtil::RegisterFunction(instance, mol_to_rdkit_mol_set);
+  loader.RegisterFunction(mol_to_rdkit_mol_set);
 }
 
-} // namespace duckdb_rdkit
+} // namespace duckdb

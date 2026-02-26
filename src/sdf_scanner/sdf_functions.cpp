@@ -1,7 +1,6 @@
 #include "sdf_scanner/sdf_functions.hpp"
 #include "duckdb/common/assert.hpp"
-#include "duckdb/common/multi_file_list.hpp"
-#include "duckdb/common/multi_file_reader.hpp"
+#include "duckdb/common/multi_file/multi_file_reader.hpp"
 #include "duckdb/common/types.hpp"
 #include "duckdb/common/types/vector.hpp"
 #include "duckdb/function/function.hpp"
@@ -109,9 +108,9 @@ unique_ptr<FunctionData> ReadSDFBind(ClientContext &context,
                                   "specification must be VARCHAR.");
           }
 
-          if (type.ToString() == duckdb_rdkit::Mol().ToString()) {
+          if (type.ToString() == Mol().ToString()) {
             bind_data->mol_col_idx = i;
-            return_types.emplace_back(duckdb_rdkit::Mol());
+            return_types.emplace_back(Mol());
           } else {
             //! All columns that are not Mol type should be converted to a
             //! normal duckdb LogicalType
@@ -135,9 +134,7 @@ unique_ptr<FunctionData> ReadSDFBind(ClientContext &context,
       // }
     }
   }
-  //! get the files
-  SimpleMultiFileList file_list(std::move(bind_data->files));
-  bind_data->files = file_list.GetAllFiles();
+
   if (bind_data->files.size() > 1) {
     throw NotImplementedException(
         "Reading more than one sdf file is currently not supported.");

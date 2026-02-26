@@ -1,10 +1,8 @@
-#include "common.hpp"
 #include "duckdb/common/exception.hpp"
 #include "duckdb/common/operator/cast_operators.hpp"
 #include "duckdb/common/types/string_type.hpp"
 #include "duckdb/common/types/vector.hpp"
 #include "duckdb/function/cast/default_casts.hpp"
-#include "duckdb/main/extension_util.hpp"
 #include "mol_formats.hpp"
 #include "types.hpp"
 #include "umbra_mol.hpp"
@@ -17,7 +15,7 @@
 #include <GraphMol/SmilesParse/SmilesWrite.h>
 #include <duckdb/parser/parsed_data/create_scalar_function_info.hpp>
 
-namespace duckdb_rdkit {
+namespace duckdb {
 
 // This enables the user to insert into a Mol column by just writing the SMILES
 // Duckdb will try to convert the string to a rdkit mol
@@ -37,8 +35,6 @@ void VarcharToMol(Vector &source, Vector &result, idx_t count) {
         } catch (...) {
           std::cout << "WARNING: could not create molecule from SMILES\n"
                     << smiles.GetData() << std::endl;
-          // printf("WARNING: could not create molecule from SMILES %s\n",
-          //        smiles.GetData());
           mask.SetInvalid(idx);
           return string_t();
         }
@@ -74,14 +70,12 @@ bool MolToVarcharCast(Vector &source, Vector &result, idx_t count,
   return true;
 }
 
-void RegisterCasts(DatabaseInstance &instance) {
-  ExtensionUtil::RegisterCastFunction(instance, LogicalType::VARCHAR,
-                                      ::duckdb_rdkit::Mol(),
-                                      BoundCastInfo(VarcharToMolCast), 1);
+void RegisterCasts(ExtensionLoader &loader) {
+  loader.RegisterCastFunction(LogicalType::VARCHAR, Mol(),
+                              BoundCastInfo(VarcharToMolCast), 1);
 
-  ExtensionUtil::RegisterCastFunction(instance, duckdb_rdkit::Mol(),
-                                      LogicalType::VARCHAR,
-                                      BoundCastInfo(MolToVarcharCast), 1);
+  loader.RegisterCastFunction(Mol(), LogicalType::VARCHAR,
+                              BoundCastInfo(MolToVarcharCast), 1);
 }
 
-} // namespace duckdb_rdkit
+} // namespace duckdb

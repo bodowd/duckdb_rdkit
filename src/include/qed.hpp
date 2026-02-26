@@ -4,7 +4,7 @@
 #include <memory>
 #include <unordered_map>
 
-namespace duckdb_rdkit {
+namespace duckdb {
 
 // Quantitative estimation of drug-likeness (QED) is implemented according to
 // the RDKit python implementation.
@@ -174,4 +174,4 @@ private:
   // adsParameters for that descriptor of interest
   double calcADS(float x, std::string adsParameterKey);
 };
-} // namespace duckdb_rdkit
+} // namespace duckdb

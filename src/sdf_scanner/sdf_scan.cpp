@@ -1,13 +1,12 @@
 #include "sdf_scanner/sdf_scan.hpp"
 #include "duckdb/common/allocator.hpp"
 #include "duckdb/common/helper.hpp"
-#include "duckdb/common/multi_file_reader.hpp"
+#include "duckdb/common/multi_file/multi_file_reader.hpp"
 #include "duckdb/common/types.hpp"
 #include "duckdb/common/unique_ptr.hpp"
 #include "duckdb/common/vector_size.hpp"
 #include "duckdb/function/table_function.hpp"
 #include "duckdb/main/client_context.hpp"
-#include "mol_formats.hpp"
 #include "types.hpp"
 #include "umbra_mol.hpp"
 #include <memory>
@@ -47,7 +46,7 @@ SDFScanGlobalState::SDFScanGlobalState(ClientContext &context_p,
     : bind_data(bind_data_p) {
   //! open the sd file
   mol_supplier =
-      make_uniq<RDKit::v2::FileParsers::SDMolSupplier>(bind_data.files[0]);
+      make_uniq<RDKit::v2::FileParsers::SDMolSupplier>(bind_data.files[0].path);
   length = mol_supplier->length();
   offset = 0;
 }
@@ -98,8 +97,8 @@ void SDFScanLocalState::ExtractNextChunk(SDFScanGlobalState &gstate,
         //! The column at the current iteration of i is the Mol type
         //! In this case, we should convert the molecule object
         //! to the "umbra" mol in duckdb_rdkit
-        if (bind_data.types[i] == duckdb_rdkit::Mol().ToString()) {
-          auto res = duckdb_rdkit::get_umbra_mol_string(*cur_mol);
+        if (bind_data.types[i] == Mol().ToString()) {
+          auto res = get_umbra_mol_string(*cur_mol);
           cur_row.emplace_back(res);
         } else {
           //! Otherwise, it is a normal property column
@@ -129,7 +128,7 @@ void SDFScan::AutoDetect(ClientContext &context, SDFScanData &bind_data,
                          vector<string> &names) {
   //! open the sd file to scan the first record
   auto mol_supplier =
-      make_uniq<RDKit::v2::FileParsers::SDMolSupplier>(bind_data.files[0]);
+      make_uniq<RDKit::v2::FileParsers::SDMolSupplier>(bind_data.files[0].path);
   while (!mol_supplier->atEnd()) {
 
     auto cur_mol = mol_supplier->next();
@@ -157,7 +156,7 @@ void SDFScan::AutoDetect(ClientContext &context, SDFScanData &bind_data,
   names.push_back("mol");
   bind_data.types.push_back("Mol");
   bind_data.mol_col_idx = names.size() - 1;
-  return_types.emplace_back(duckdb_rdkit::Mol());
+  return_types.emplace_back(Mol());
   bind_data.names = names;
 }
 
