@@ -314,15 +314,13 @@ jobs:
           DUCKDB_PLATFORM: ${{ matrix.duckdb_arch }}
         run: | 
             conda activate rdkit_build   
-            conda info --envs
-            gcc --version
             echo "CMAKE_PREFIX_PATH=$CONDA_PREFIX:$CMAKE_PREFIX_PATH" >> $GITHUB_ENV
-            make test
+            make release
 
-      # - name: Test extension
-      #   if: ${{ matrix.duckdb_arch != 'linux_arm64'}}
-      #   run: |
-      #     make test
+      - name: Test extension
+        if: ${{ matrix.duckdb_arch != 'linux_arm64'}}
+        run: |
+          make test
 
       - uses: actions/upload-artifact@v4
         id: artifact-upload

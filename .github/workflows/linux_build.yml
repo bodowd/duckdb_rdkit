@@ -1,0 +1,70 @@
+name: Linux build 
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      duckdb_version:
+        description: 'DuckDB version to build against'
+        required: true
+        default: 'v1.4.4'
+
+jobs:
+  build:
+    name: Build Extension for Linux
+    runs-on: ubuntu-latest
+
+    env:
+      DUCKDB_VERSION: ${{ github.event.inputs.duckdb_version }}
+      EXTENSION_NAME: duckdb_rdkit
+
+    steps:
+      - name: Checkout Extension
+        uses: actions/checkout@v4
+        with:
+          submodules: 'true'
+          fetch-depth: 0
+
+      - name: Checkout DuckDB
+        run: |
+          cd duckdb
+          git fetch --tags
+          git checkout ${{ env.DUCKDB_VERSION }}
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build build-essential libssl-dev
+
+      - name: Setup Conda (for RDKit)
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          activate-environment: "rdkit_build"
+          environment-file: linux_conda_env.yml
+          auto-update-conda: true
+          channels: conda-forge,defaults
+
+      - name: Build Extension
+        shell: bash -el {0}
+        run: |
+          conda activate rdkit_build
+          export CC=/usr/bin/gcc
+          export CXX=/usr/bin/g++
+          # Ensure CMake can find RDKit inside the Conda environment
+          echo "CMAKE_PREFIX_PATH=$CONDA_PREFIX:$CMAKE_PREFIX_PATH" >> $GITHUB_ENV
+          GEN=ninja make release
+
+      - name: Test Extension
+        shell: bash -el {0}
+        run: |
+          make test
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.EXTENSION_NAME }}-linux-x86_64
+          path: |
+            build/release/extension/${{ env.EXTENSION_NAME }}/${{ env.EXTENSION_NAME }}.duckdb_extension
+            build/release/duckdb
