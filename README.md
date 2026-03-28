@@ -31,13 +31,11 @@ cheminformatics work with DuckDB.
   These can be used to extract, transform, and load data
   into a duckdb file for faster subsequent queries, or to directly query the
   sdf to explore the data.
-
   - `read_sdf(path/to/sdf/file, COLUMNS={column_name: LogicalType});`
     Using the `read_sdf` function, the properties of interest in the sdf file
     can be explicitly defined. If a record does not have the specified property,
     a null value will be returned. The `'Mol'` type will indicate to the
     extension that the molecules in the records should be extracted and returned.
-
     - Example: `SELECT * FROM read_sdf(path/to/file, COLUMNS={desired_col: 'VARCHAR', mol: 'Mol'});`
 
   - Automatic detection of `sdf` files. This will execute the query against
@@ -155,6 +153,10 @@ If you downloaded the compiled binaries from here, you will need to tell
 duckdb where to find the RDKit shared object files. Otherwise, you may see errors like this:
 `./duckdb: error while loading shared libraries: libRDKitDescriptors.so.1: cannot open shared object file: No such file or directory`
 
+> [!IMPORTANT]
+> Make sure the RDKit you have installed is the same version as the one the extension
+> is built with. See `linux_conda_env.yml` to find the RDKit version the extension was built with.
+
 If you have your conda env activated:
 
 ```shell
@@ -165,17 +167,26 @@ export DYLD_LIBRARY_PATH=$CONDA_PREFIX/lib:$DYLD_LIBRARY_PATH
 ```
 
 If you don't have your conda env activated, you will need to find where
-your installation has placed these files. For example, in `~/miniforge3/envs/my_rdkit_env/lib`.
+your installation has placed these files. For example, in `~/miniforge3/envs/my_rdkit_env/lib` where
+`my_rdkit_env` is the name of whatever conda env you use.
 You will need to add your path to `LD_LIBRARY_PATH` on Linux, or `DYLD_LIBRARY_PATH` on osx.
+
+```shell
+# LINUX
+export LD_LIBRARY_PATH=~/miniforge3/envs/my_rdkit_env/lib:$LD_LIBRARY_PATH
+# OSX
+export DYLD_LIBRARY_PATH=~/miniforge3/envs/my_rdkit_env/lib:$DYLD_LIBRARY_PATH
+```
 
 If you want to run with a different binary that does not have the extension already
 installed and loaded, but rather point to this extension,
 you'll need to tell duckdb where the extension is, and you also need to tell
 it to run unsigned extensions.
 
-Warning: I was not able to get the extension to run on the linux CLI binary downloaded
-from duckdb's website. That seems to have been compiled for `linux_amd64_gcc4`,
-and I was not successful compiling the extension for that.
+> [!WARNING]
+> I was not able to get the extension to run on the linux CLI binary downloaded
+> from duckdb's website. That seems to have been compiled for `linux_amd64_gcc4`,
+> and I was not successful compiling the extension for that.
 
 Run duckdb with the `unsigned` flag on to run unsigned extensions.
 More information here: https://duckdb.org/docs/extensions/overview.html#unsigned-extensions
