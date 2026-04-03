@@ -44,6 +44,8 @@ std::string DuckdbRdkitExtension::Name() { return "duckdb_rdkit"; }
 
 } // namespace duckdb
 
+extern "C" {
 DUCKDB_CPP_EXTENSION_ENTRY(duckdb_rdkit, loader) {
   duckdb::LoadInternal(loader);
+}
 }
