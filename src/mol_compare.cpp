@@ -82,32 +82,27 @@ static void is_exact_match(DataChunk &args, ExpressionState &state,
       });
 }
 
-bool _is_substruct(umbra_mol_t target, umbra_mol_t query) {
-  // copied from chemicalite
-  RDKit::MatchVectType matchVect;
-  bool recursion_possible = true;
-  bool do_chiral_match = false; /* FIXME: make configurable getDoChiralSSS(); */
+bool _is_substruct(umbra_mol_t target, umbra_mol_t query,
+                   RDKit::MatchVectType match_vect, bool recursion_possible,
+                   bool do_chiral_match) {
 
-  std::unique_ptr<RDKit::ROMol> left_mol(new RDKit::ROMol());
-  std::unique_ptr<RDKit::ROMol> right_mol(new RDKit::ROMol());
-  RDKit::MolPickler::molFromPickle(target.GetBinaryMol(), *left_mol);
-  RDKit::MolPickler::molFromPickle(target.GetBinaryMol(), *right_mol);
+  RDKit::ROMol left_mol;
+  RDKit::ROMol right_mol;
+  RDKit::MolPickler::molFromPickle(target.GetBinaryMol(), left_mol);
+  RDKit::MolPickler::molFromPickle(target.GetBinaryMol(), right_mol);
 
-  return RDKit::SubstructMatch(*left_mol, *right_mol, matchVect,
+  return RDKit::SubstructMatch(left_mol, right_mol, match_vect,
                                recursion_possible, do_chiral_match);
 }
 
-bool _is_substruct(umbra_mol_t target, umbra_mol_t query,
-                   RDKit::ROMol cached_mol) {
-  // copied from chemicalite
-  RDKit::MatchVectType matchVect;
-  bool recursion_possible = true;
-  bool do_chiral_match = false; /* FIXME: make configurable getDoChiralSSS(); */
+bool _is_substruct(umbra_mol_t target, RDKit::ROMol cached_mol,
+                   RDKit::MatchVectType match_vect, bool recursion_possible,
+                   bool do_chiral_match) {
 
-  std::unique_ptr<RDKit::ROMol> left_mol(new RDKit::ROMol());
-  RDKit::MolPickler::molFromPickle(target.GetBinaryMol(), *left_mol);
+  RDKit::ROMol left_mol;
+  RDKit::MolPickler::molFromPickle(target.GetBinaryMol(), left_mol);
 
-  return RDKit::SubstructMatch(*left_mol, cached_mol, matchVect,
+  return RDKit::SubstructMatch(left_mol, cached_mol, match_vect,
                                recursion_possible, do_chiral_match);
 }
 
@@ -139,11 +134,17 @@ static void is_substruct(DataChunk &args, ExpressionState &state,
     auto right_data = ConstantVector::GetData<string_t>(right);
     local_state.UpdateCache(*right_data);
   }
+
+  // copied from chemicalite
+  RDKit::MatchVectType match_vect;
+  bool recursion_possible = true;
+  bool do_chiral_match = false; /* FIXME: make configurable getDoChiralSSS(); */
+
   BinaryExecutor::Execute<string_t, string_t, bool>(
       left, right, result, args.size(),
       [&](string_t &left_umbra_blob, string_t &right_umbra_blob) {
-        auto query = umbra_mol_t(right_umbra_blob);
-        auto target = umbra_mol_t(left_umbra_blob);
+        auto query_umbra_mol = umbra_mol_t(right_umbra_blob);
+        auto target_umbra_mol = umbra_mol_t(left_umbra_blob);
         // if the fragment exists in the query but not in the target,
         // there is no way for a match. This only works in one direction
         //
@@ -160,8 +161,8 @@ static void is_substruct(DataChunk &args, ExpressionState &state,
         //
         // It is only possible to short-circuit in the false case, not in the
         // true case
-        auto q_prefix = query.GetPrefixAsInt();
-        auto t_prefix = target.GetPrefixAsInt();
+        auto q_prefix = query_umbra_mol.GetPrefixAsInt();
+        auto t_prefix = target_umbra_mol.GetPrefixAsInt();
         // The 4 byte prefix in string_t is inlined. This is very fast to check.
         // If the first 4 bytes are a match, we need the rest of the dalke fp to
         // further check. This requires chasing a
@@ -170,19 +171,23 @@ static void is_substruct(DataChunk &args, ExpressionState &state,
         // if the first 4 bytes do not rule out the possiblity of being a
         // substructure match
         if ((q_prefix & t_prefix) == q_prefix) {
-          auto q_dalke_fp = query.GetDalkeFP();
-          auto t_dalke_fp = target.GetDalkeFP();
+          auto q_dalke_fp = query_umbra_mol.GetDalkeFP();
+          auto t_dalke_fp = target_umbra_mol.GetDalkeFP();
           // query might be substructure of the target -- run a substructure
           // match on the molecule objects
           if ((q_dalke_fp & t_dalke_fp) == q_dalke_fp) {
             if (local_state.cached_mol) {
-              return _is_substruct(target, query, *local_state.cached_mol);
+              return _is_substruct(target_umbra_mol, *local_state.cached_mol,
+                                   match_vect, recursion_possible,
+                                   do_chiral_match);
             } else {
               // cached_mol could be empty if the right side (query molecule)
               // is not a constant, for example if the query compares two Mol
               // columns. In this case, we need to convert the query molecule
               // on every row because it possibly changes every row
-              return _is_substruct(target, query);
+              return _is_substruct(target_umbra_mol, query_umbra_mol,
+                                   match_vect, recursion_possible,
+                                   do_chiral_match);
             }
           }
         }
