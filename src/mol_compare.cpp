@@ -1,8 +1,11 @@
+#include "mol_compare.hpp"
 #include "common.hpp"
+#include "duckdb/common/enums/vector_type.hpp"
+#include "duckdb/common/helper.hpp"
 #include "duckdb/common/types/vector.hpp"
+#include "duckdb/common/unique_ptr.hpp"
 #include "duckdb/execution/expression_executor_state.hpp"
 #include "duckdb/function/scalar_function.hpp"
-#include "mol_formats.hpp"
 #include "types.hpp"
 #include "umbra_mol.hpp"
 #include <GraphMol/Descriptors/MolDescriptors.h>
@@ -80,51 +83,47 @@ static void is_exact_match(DataChunk &args, ExpressionState &state,
 }
 
 bool _is_substruct(umbra_mol_t target, umbra_mol_t query) {
-  // if the fragment exists in the query but not in the target,
-  // there is no way for a match. This only works in one direction
-  //
-  // If the fragment exists in the target, but not the query, it is still
-  // possible there is something in the query that matches the target, but
-  // is not captured in the dalke fingerprint
-  //
-  // If all fragments that are on in the query are also on in the target,
-  // this does not mean that the query is a substructure. It is possible
-  // that there is something in the query not captured in the fingerprint
-  // that is present in the query, but not in the target. For example,
-  // if the query has NCCCCCCCC, and the target has the N bit set,
-  // but it could be that the target is only NC
-  //
-  // It is only possible to short-circuit in the false case, not in the
-  // true case
-  auto q_prefix = query.GetPrefixAsInt();
-  auto t_prefix = target.GetPrefixAsInt();
+  // copied from chemicalite
+  RDKit::MatchVectType matchVect;
+  bool recursion_possible = true;
+  bool do_chiral_match = false; /* FIXME: make configurable getDoChiralSSS(); */
 
-  // The 4 byte prefix in string_t is inlined. This is very fast to check.
-  // If we cannot conclude that the query is NOT a substructure of the target,
-  // we need the rest of the dalke fp. This requires chasing a pointer to the
-  // data of which the next 4 bytes of the dalke fp is at the front of.
-  if ((q_prefix & t_prefix) == q_prefix) {
-    auto q_dalke_fp = query.GetDalkeFP();
-    auto t_dalke_fp = target.GetDalkeFP();
-    if ((q_dalke_fp & t_dalke_fp) == q_dalke_fp) {
-      // query might be substructure of the target -- run a substructure match
-      // on the molecule objects
-      std::unique_ptr<RDKit::ROMol> left_mol(new RDKit::ROMol());
-      std::unique_ptr<RDKit::ROMol> right_mol(new RDKit::ROMol());
+  std::unique_ptr<RDKit::ROMol> left_mol(new RDKit::ROMol());
+  std::unique_ptr<RDKit::ROMol> right_mol(new RDKit::ROMol());
+  RDKit::MolPickler::molFromPickle(target.GetBinaryMol(), *left_mol);
+  RDKit::MolPickler::molFromPickle(target.GetBinaryMol(), *right_mol);
 
-      RDKit::MolPickler::molFromPickle(target.GetBinaryMol(), *left_mol);
-      RDKit::MolPickler::molFromPickle(query.GetBinaryMol(), *right_mol);
+  return RDKit::SubstructMatch(*left_mol, *right_mol, matchVect,
+                               recursion_possible, do_chiral_match);
+}
 
-      // copied from chemicalite
-      RDKit::MatchVectType matchVect;
-      bool recursion_possible = true;
-      bool do_chiral_match =
-          false; /* FIXME: make configurable getDoChiralSSS(); */
-      return RDKit::SubstructMatch(*left_mol, *right_mol, matchVect,
-                                   recursion_possible, do_chiral_match);
-    }
+bool _is_substruct(umbra_mol_t target, umbra_mol_t query,
+                   RDKit::ROMol cached_mol) {
+  // copied from chemicalite
+  RDKit::MatchVectType matchVect;
+  bool recursion_possible = true;
+  bool do_chiral_match = false; /* FIXME: make configurable getDoChiralSSS(); */
+
+  std::unique_ptr<RDKit::ROMol> left_mol(new RDKit::ROMol());
+  RDKit::MolPickler::molFromPickle(target.GetBinaryMol(), *left_mol);
+
+  return RDKit::SubstructMatch(*left_mol, cached_mol, matchVect,
+                               recursion_possible, do_chiral_match);
+}
+
+void IsSubstructLocalState::UpdateCache(string_t umbra_blob) {
+  if (cached_mol == nullptr) {
+    umbra_mol_t umbra_mol(umbra_blob);
+    cached_mol = make_uniq<RDKit::ROMol>();
+    RDKit::MolPickler::molFromPickle(umbra_mol.GetBinaryMol(), *cached_mol);
   }
-  return false;
+}
+
+unique_ptr<FunctionLocalState>
+IsSubstructLocalState::Init(ExpressionState &state,
+                            const BoundFunctionExpression &expr,
+                            FunctionData *bind_data) {
+  return make_uniq<IsSubstructLocalState>();
 }
 
 static void is_substruct(DataChunk &args, ExpressionState &state,
@@ -134,13 +133,60 @@ static void is_substruct(DataChunk &args, ExpressionState &state,
   auto &left = args.data[0];
   auto &right = args.data[1];
 
+  auto &local_state = ExecuteFunctionState::GetFunctionState(state)
+                          ->Cast<IsSubstructLocalState>();
+  if (right.GetVectorType() == VectorType::CONSTANT_VECTOR) {
+    auto right_data = ConstantVector::GetData<string_t>(right);
+    local_state.UpdateCache(*right_data);
+  }
   BinaryExecutor::Execute<string_t, string_t, bool>(
       left, right, result, args.size(),
       [&](string_t &left_umbra_blob, string_t &right_umbra_blob) {
-        auto left_umbra_mol = umbra_mol_t(left_umbra_blob);
-        auto right_umbra_mol = umbra_mol_t(right_umbra_blob);
-
-        return _is_substruct(left_umbra_mol, right_umbra_mol);
+        auto query = umbra_mol_t(right_umbra_blob);
+        auto target = umbra_mol_t(left_umbra_blob);
+        // if the fragment exists in the query but not in the target,
+        // there is no way for a match. This only works in one direction
+        //
+        // If the fragment exists in the target, but not the query, it is still
+        // possible there is something in the query that matches the target, but
+        // is not captured in the dalke fingerprint
+        //
+        // If all fragments that are on in the query are also on in the target,
+        // this does not mean that the query is a substructure. It is possible
+        // that there is something in the query not captured in the fingerprint
+        // that is present in the query, but not in the target. For example,
+        // if the query has NCCCCCCCC, and the target has the N bit set,
+        // but it could be that the target is only NC
+        //
+        // It is only possible to short-circuit in the false case, not in the
+        // true case
+        auto q_prefix = query.GetPrefixAsInt();
+        auto t_prefix = target.GetPrefixAsInt();
+        // The 4 byte prefix in string_t is inlined. This is very fast to check.
+        // If the first 4 bytes are a match, we need the rest of the dalke fp to
+        // further check. This requires chasing a
+        // pointer to the data of which the next 4 bytes of the dalke fp is at
+        // the front of and is a little more expensive, so we only do this
+        // if the first 4 bytes do not rule out the possiblity of being a
+        // substructure match
+        if ((q_prefix & t_prefix) == q_prefix) {
+          auto q_dalke_fp = query.GetDalkeFP();
+          auto t_dalke_fp = target.GetDalkeFP();
+          // query might be substructure of the target -- run a substructure
+          // match on the molecule objects
+          if ((q_dalke_fp & t_dalke_fp) == q_dalke_fp) {
+            if (local_state.cached_mol) {
+              return _is_substruct(target, query, *local_state.cached_mol);
+            } else {
+              // cached_mol could be empty if the right side (query molecule)
+              // is not a constant, for example if the query compares two Mol
+              // columns. In this case, we need to convert the query molecule
+              // on every row because it possibly changes every row
+              return _is_substruct(target, query);
+            }
+          }
+        }
+        return false;
       });
 }
 
@@ -152,8 +198,10 @@ void RegisterCompareFunctions(ExtensionLoader &loader) {
   loader.RegisterFunction(set);
 
   ScalarFunctionSet set_is_substruct("is_substruct");
-  set_is_substruct.AddFunction(
-      ScalarFunction({Mol(), Mol()}, LogicalType::BOOLEAN, is_substruct));
+  ScalarFunction is_substruct_func("is_substruct", {Mol(), Mol()},
+                                   LogicalType::BOOLEAN, is_substruct);
+  is_substruct_func.init_local_state = IsSubstructLocalState::Init;
+  set_is_substruct.AddFunction(is_substruct_func);
   loader.RegisterFunction(set_is_substruct);
 }
 
