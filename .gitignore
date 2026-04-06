@@ -9,7 +9,6 @@ test/python/__pycache__/
 .cache
 *.duckdb
 compile_commands.json
-experiments/
 CMakeCache.txt
 compile_commands.json
 CMakeFiles
