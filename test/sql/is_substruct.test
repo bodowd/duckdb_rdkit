@@ -1,0 +1,41 @@
+# Require statement will ensure this test is run with this extension loaded
+require duckdb_rdkit
+
+# setup
+statement ok
+CREATE TABLE molecules (m Mol);
+INSERT INTO molecules VALUES ('C[C@@H](N)C(=O)O |&1:1|'), ('C[C@@H](N)C(=O)O'), ('C[C@H](N)C(=O)O'), ('CCO'), ('c1ccncc1'), ('c1ccc(-c2ccccn2)nc1')
+
+statement ok
+CREATE TABLE molecules_two (m Mol);
+INSERT INTO molecules_two VALUES ('c1ccncc1'), ('NC(C)C(=O)O')
+
+
+# is stereo insensitive 
+# (todo: make it possible to do stereosensitive substructure search)
+# (todo: also handle enhanced stereochemistry -- currently the enhanced stereochemistry annotations get removed)
+query I
+SELECT m from molecules WHERE is_substruct(m, 'NC(C)C(=O)O');
+----
+C[C@@H](N)C(=O)O
+C[C@@H](N)C(=O)O
+C[C@H](N)C(=O)O
+
+query I
+SELECT m from molecules WHERE is_substruct(m, 'CCO');
+----
+C[C@@H](N)C(=O)O
+C[C@@H](N)C(=O)O
+C[C@H](N)C(=O)O
+CCO
+
+
+# should be able to get query molecules a column in another table
+query I
+SELECT m FROM molecules WHERE EXISTS ( SELECT 1 FROM molecules_two WHERE is_substruct(molecules.m, molecules_two.m));
+----
+C[C@@H](N)C(=O)O
+C[C@H](N)C(=O)O
+c1ccncc1
+c1ccc(-c2ccccn2)nc1
+
