@@ -15,14 +15,14 @@ INSERT INTO molecules_two VALUES ('c1ccncc1'), ('NC(C)C(=O)O')
 # (todo: make it possible to do stereosensitive substructure search)
 # (todo: also handle enhanced stereochemistry -- currently the enhanced stereochemistry annotations get removed)
 query I
-SELECT m from molecules WHERE is_substruct(m, 'NC(C)C(=O)O');
+SELECT m::VARCHAR from molecules WHERE is_substruct(m, 'NC(C)C(=O)O');
 ----
 C[C@@H](N)C(=O)O
 C[C@@H](N)C(=O)O
 C[C@H](N)C(=O)O
 
 query I
-SELECT m from molecules WHERE is_substruct(m, 'CCO');
+SELECT m::VARCHAR from molecules WHERE is_substruct(m, 'CCO');
 ----
 C[C@@H](N)C(=O)O
 C[C@@H](N)C(=O)O
@@ -32,7 +32,7 @@ CCO
 
 # should be able to get query molecules a column in another table
 query I
-SELECT m FROM molecules WHERE EXISTS ( SELECT 1 FROM molecules_two WHERE is_substruct(molecules.m, molecules_two.m));
+SELECT m::VARCHAR FROM molecules WHERE EXISTS ( SELECT 1 FROM molecules_two WHERE is_substruct(molecules.m, molecules_two.m));
 ----
 C[C@@H](N)C(=O)O
 C[C@H](N)C(=O)O
