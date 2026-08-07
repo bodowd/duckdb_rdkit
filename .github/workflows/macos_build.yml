@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout Extension
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           submodules: 'true'
           fetch-depth: 0
@@ -37,23 +37,9 @@ jobs:
         run: |
           brew install cmake ninja
  
-
-      - name: Setup Conda (for RDKit)
-        uses: conda-incubator/setup-miniconda@v3
-        with:
-          activate-environment: "rdkit_build"
-          environment-file: osx_conda_env.yml
-          auto-update-conda: true
-          channels: conda-forge,defaults
-
       - name: Build Extension
-        shell: bash -el {0}
+        shell: bash
         run: |
-          conda activate rdkit_build   
-          export CC=/usr/bin/gcc
-          export CXX=/usr/bin/g++
-          # Ensure CMake can find RDKit inside the Conda environment
-          echo "CMAKE_PREFIX_PATH=$CONDA_PREFIX:$CMAKE_PREFIX_PATH" >> $GITHUB_ENV
           GEN=ninja make release
 
       - name: Test Extension
@@ -62,7 +48,7 @@ jobs:
           make test
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.EXTENSION_NAME }}-osx-arm64
           path: |
