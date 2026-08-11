@@ -9,22 +9,20 @@ set(TARGET_NAME duckdb_rdkit)
 
 set(RDKIT_PREFIX "${CMAKE_CURRENT_LIST_DIR}/build/rdkit-prefix")
 
-find_package(RDKit QUIET)
-if(NOT RDKit_FOUND)
-    message(STATUS "RDKit not found; building static Boost/RDKit into ${RDKIT_PREFIX}")
-    execute_process(
-        COMMAND bash "${CMAKE_CURRENT_LIST_DIR}/scripts/build_rdkit_static.sh" "${RDKIT_PREFIX}"
-        RESULT_VARIABLE RDKIT_BUILD_RESULT
-    )
-    if(NOT RDKIT_BUILD_RESULT EQUAL 0)
-        message(FATAL_ERROR "scripts/build_rdkit_static.sh failed (${RDKIT_BUILD_RESULT})")
-    endif()
-
-    set(Boost_DIR "${RDKIT_PREFIX}/boost/lib/cmake/Boost-1.84.0" CACHE PATH "" FORCE)
-    set(Boost_INCLUDE_DIR "${RDKIT_PREFIX}/boost/include" CACHE PATH "" FORCE)
-    set(RDKit_DIR "${RDKIT_PREFIX}/rdkit/lib/cmake/rdkit" CACHE PATH "" FORCE)
-    set(CMAKE_PREFIX_PATH "${RDKIT_PREFIX}/boost" CACHE PATH "" FORCE)
+message(STATUS "Building static Boost/RDKit into ${RDKIT_PREFIX}")
+execute_process(
+    COMMAND bash "${CMAKE_CURRENT_LIST_DIR}/scripts/build_rdkit_static.sh" "${RDKIT_PREFIX}"
+    RESULT_VARIABLE RDKIT_BUILD_RESULT
+)
+if(NOT RDKIT_BUILD_RESULT EQUAL 0)
+    message(FATAL_ERROR "scripts/build_rdkit_static.sh failed (${RDKIT_BUILD_RESULT})")
 endif()
+
+set(Boost_DIR "${RDKIT_PREFIX}/boost/lib/cmake/Boost-1.84.0" CACHE PATH "" FORCE)
+set(Boost_INCLUDE_DIR "${RDKIT_PREFIX}/boost/include" CACHE PATH "" FORCE)
+set(RDKit_DIR "${RDKIT_PREFIX}/rdkit/lib/cmake/rdkit" CACHE PATH "" FORCE)
+set(CMAKE_PREFIX_PATH "${RDKIT_PREFIX}/boost" CACHE PATH "" FORCE)
+unset(Boost_assert_DIR CACHE)
 
 find_package(Boost REQUIRED COMPONENTS system serialization iostreams)
 find_package(RDKit REQUIRED)
