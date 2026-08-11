@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-11
+
+### Changed
+
+ - `duckdb_rdkit` now statically links RDKit, so no separate RDKit install is needed
+
 ### Added
 
 - `mol_to_rdkit_mol` to convert the duckdb_rdkit molecule into a format compatible
