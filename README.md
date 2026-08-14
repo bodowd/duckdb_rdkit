@@ -28,17 +28,14 @@ cheminformatics work with DuckDB.
 
 ## Currently supported functionality:
 
-### Types
+### Searches
 
-- `Mol`: the internal duckdb_rdkit representation of a RDKit molecule.
-  - Currently only SMILES can be converted to `Mol`. This can be done with
-    `mol_from_smiles`, or by casts (i.e. inserting a SMILES string into a
-    column that expects `Mol` or `'CC::mol'`).
-
-> [!IMPORTANT]  
-> The duckdb_rdkit molecule representation has additional metadata and cannot
-> be read directly by RDKit. You will get an error. You can use `mol_to_rdkit_mol`
-> to convert the duckdb_rdkit molecule representation into one that is RDKit compatible.
+- `is_exact_match(mol1, mol2)`: exact structure search. Returns true if the two molecules are the same. (Chirality sensitive search is not on)
+  - Note: if you are looking for very specific capabilities with exact match with regards
+    to stereochemistry or tautomers, the `RegistrationHash` (https://rdkit.org/docs/source/rdkit.Chem.RegistrationHash.html)
+    might be an option to consider. You would need to write this to your DB and
+    then you can do a simple VARCHAR based search on those columns.
+- `is_substruct(mol1, mol2)`: returns true if mol2 is a substructure of mol1.
 
 ### File formats
 
@@ -70,14 +67,18 @@ cheminformatics work with DuckDB.
 
   - Example: `SELECT mol, id FROM 'test.sdf';`
 
-### Searches
 
-- `is_exact_match(mol1, mol2)`: exact structure search. Returns true if the two molecules are the same. (Chirality sensitive search is not on)
-  - Note: if you are looking for very specific capabilities with exact match with regards
-    to stereochemistry or tautomers, the `RegistrationHash` (https://rdkit.org/docs/source/rdkit.Chem.RegistrationHash.html)
-    might be an option to consider. You would need to write this to your DB and
-    then you can do a simple VARCHAR based search on those columns.
-- `is_substruct(mol1, mol2)`: returns true if mol2 is a substructure of mol1.
+### Types
+
+- `Mol`: the internal duckdb_rdkit representation of a RDKit molecule.
+  - Currently only SMILES can be converted to `Mol`. This can be done with
+    `mol_from_smiles`, or by casts (i.e. inserting a SMILES string into a
+    column that expects `Mol` or `'CC::mol'`).
+
+> [!IMPORTANT]  
+> The duckdb_rdkit molecule representation has additional metadata and cannot
+> be read directly by RDKit. You will get an error. You can use `mol_to_rdkit_mol`
+> to convert the duckdb_rdkit molecule representation into one that is RDKit compatible.
 
 ### Molecule conversion functions
 
